@@ -1,41 +1,497 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vivus/0.4.6/vivus.min.js" integrity="sha512-oUUeA7VTcWBqUJD/VYCBB4VeIE0g1pg5aRMiSUOMGnNNeCLRS39OlkcyyeJ0hYx2h3zxmIWhyKiUXKkfZ5Wryg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <title>SWARNAKARSHAN LABS PVT LTD - KOSH</title>
+    <link rel="stylesheet" href="https://use.typekit.net/jmw2lpz.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <style>
-        .cls-1 {
-            fill: none;
-            stroke: #fff;
-             stroke-width: 9px;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-miterlimit: 10;
-            stroke-dashoffset: 1500;
-            stroke-dasharray: 1500; 
+        @layer utilities {
+            .kosh-k {
+                transform: perspective(100px) rotateY(-5deg);
+            }
         }
+
+        /* WebGL Canvas */
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Text Animations - GSAP will handle these */
+        .text-reveal {
+            opacity: 1;
+        }
+
+        .text-reveal-line {
+            overflow: hidden;
+        }
+
+        .text-reveal-line-inner {
+            display: inline-block;
+        }
+
+        /* Ensure body is scrollable */
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Custom Font */
+        body {
+            font-family: "acumin-pro", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        /* Infinite Loop Footer */
+        .infinite-footer {
+            position: relative;
+            width: 100%;
+            /* background: #000;
+            color: #fff; */
+            padding: 40px 0;
+            overflow: hidden;
+        }
+
+        .infinite-footer-content {
+            display: flex;
+            white-space: nowrap;
+            will-change: transform;
+        }
+
+        .infinite-footer-text {
+            display: inline-block;
+            font-size: clamp(6.25rem, 4.5rem + 8.75vw, 15rem);
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 0 50px;
+            line-height: 1;
+        }
+
+        .footer-info {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 80px;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .footer-contact {
+            /* font-size: 14px; */
+            font-weight: 400;
+        }
+
+        .footer-contact a {
+            color: #000;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-contact a:hover {
+            opacity: 0.7;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            /* font-size: 14px; */
+            font-weight: 400;
+        }
+        .koosh_logo{
+            width: clamp(18.75rem, 16.25rem + 12.5vw, 31.25rem);
+        }
+
+        .footer-links a {
+            color: #000;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+          .infinite-footer-content{
+            margin-bottom: 60px;
+          }
+          .infinite-footer{
+            margin-bottom: 20px;
+          }
+            .footer-info {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-end;
+                padding: 0 20px;
+            }
+
+            .footer-contact,
+            .footer-links {
+                font-size: 12px;
+            }
+        }
+
+        /* @media (min-width: 768px) {
+            .infinite-footer-text {
+                font-size: 150px;
+            }
+        } */
     </style>
 </head>
-<body>
-    <span class="fv_icon fv_line">
-        <svg class="top_line_animation" id="fv_animation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 668 304.79" width="668" height="304.79">
-            <image alt="s" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://webtate.co.jp/wp-content/themes/webtate-2021/images/top/fv-line.svg" width="668" height="304.79" mask="url(#fv_line)"></image>
-            <mask id="fv_line" maskUnits="objectBoundingBox">
-                <!-- Removed erroneous &lt; character -->
-                <path class="cls-1" d="M100.84,290.92L46.1,242.5L49.79,232.5L124.53,234.6L112.42,217.24L46.1,168.82L34.53,143.55L61.37,140.92L127.16,145.13L302.42,172.5L324.53,171.97L307.68,152.5L270.32,118.82L238.21,87.76L207.16,63.55L197.68,39.34L217.68,30.39L304,40.92L449.26,73.03L584,117.76L639.26,135.66L601.37,143.03" ></path>
-            </mask>
-        </svg>
-    </span>
+<body class="bg-white text-black font-sans overflow-x-hidden">
+    <!-- WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        <!-- SWARNAKARSHAN LABS Logo and Name -->
+        <header class="min-h-screen flex flex-col justify-center items-center text-center py-20 px-10 md:py-20 md:px-10">
+            <div class="flex justify-center mb-5 text-reveal" data-reveal="logo">
+                <div class="w-60 h-60 bg-black flex items-center justify-center">
+                    <div class="w-40 h-40 bg-white rounded-full"></div>
+                </div>
+            </div>
+            <h1 class="text-2xl md:text-2xl font-bold tracking-wider uppercase leading-snug text-reveal" data-reveal="text">
+                <span class="text-reveal-line"><span class="text-reveal-line-inner">SWARNAKARSHAN</span></span><br>
+                <span class="text-reveal-line"><span class="text-reveal-line-inner">LABS PVT LTD</span></span>
+            </h1>
+        </header>
+
+        <!-- Incubation Lab Section -->
+        <section class="incubation-section pt-20 pb-40 flex flex-col justify-center items-center py-20 px-10 md:py-20 md:px-10 md:pb-60">
+            <div class="flex flex-col md:flex-row gap-20 items-center justify-center max-w-5xl mx-auto w-full">
+                <div class="flex-1 text-2xl md:text-3xl font-bold leading-snug md:leading-snug text-left w-full md:text-right">
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">Incubation lab</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">using technology to</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">turn fragmented</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">ecosystems into</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">networks that</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">compound globally.</span></p>
+                </div>
+                <div class="flex-1 w-full text-base leading-relaxed relative md:pl-5 mt-[20%]">
+                    <p class="text-left text-xl md:text-2xl text-reveal-line">
+                        <span class="text-reveal-line-inner text-reveal">Bharat-built and AI-led,</span></p>
+                        <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">SLPL prototypes and scales</span></p>           
+                        <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">products that make value flow </span></p>
+                        <p class="text-left text-xl md:text-2xl text-reveal-line mb-4"><span class="text-reveal-line-inner text-reveal">cleaner, faster, and fairer.</span>
+                    </p>
+                    
+                        <p class=" text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">We focus on long-horizon </span></p>
+                        <p class=" text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">problems, ownership, trust, </span></p>
+                        <p class=" text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">continuity, then graduate ventures </span></p>
+                        <p class=" text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">once the network shows real </span></p>
+                        <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal"> compounding.</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+         
+       
+
+        <!-- KOSH Section -->
+        <section class="kosh-section pt-40 pb-60 flex flex-col justify-center items-center text-left md:text-center py-20 px-10 md:py-20 md:px-10 md:pb-80">
+            <p class="text-reveal-line text-3xl mb-10 w-full font-bold text-left md:text-center"><span class="text-reveal-line-inner text-reveal">LAUNCHING SOON</span></p>
+            <div class="text-6xl w-full md:text-7xl font-bold tracking-wider mb-5 text-reveal-line">
+                <span class="text-reveal-line-inner text-reveal">
+                    <img src="./kkosh.png" class="koosh_logo" alt="kkosh logo">
+                </span>
+            </div>
+            <p class="text-lg w-full mb-10 font-normal tracking-wide text-reveal-line">
+                <span class="text-reveal-line-inner text-reveal text-2xl md:text-3xl">Ownership vault for Consumer <br> Possession Journey</span>
+            </p>
+            
+            <div class="flex flex-col md:flex-row gap-10 items-center justify-center max-w-5xl mx-auto w-full mt-10">
+                <div class="flex-1 text-2xl md:text-3xl font-bold leading-snug md:leading-snug text-left md:text-right">
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">A high-value possessions</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">vault that unifies warranties,</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">insurance, loans, and service</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">into one clean, effortless</span></p>
+                    <p class="text-reveal-line"><span class="text-reveal-line-inner text-reveal">post-purchase flow.</span></p>
+                </div>
+                <div class="flex-1 text-base leading-relaxed relative md:pl-5 mt-[20%]">
+                    <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">KKOSH organizes vehicles, </span></p>
+                    <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">appliances, and policies into</span></p>
+                    <p class="text-left text-xl md:text-2xl text-reveal-line"><span class="text-reveal-line-inner text-reveal">simple, living cards nudging at the </span></p>
+                    <p class="text-left text-xl md:text-2xl text-reveal-line "><span class="text-reveal-line-inner text-reveal">right time and connecting to</span></p>
+                        <p class="text-left text-xl md:text-2xl text-reveal-line mb-4"><span class="text-reveal-line-inner text-reveal"> trusted partners when action is needed.</span>
+                    </p>
+                    <p class="text-left text-xl md:text-2xl text-reveal-line">
+                       <span class="text-reveal-line-inner text-reveal">From EMI and renewal to repair, </span></p>
+                    <p class="text-left text-xl md:text-2xl text-reveal-line">
+                       <span class="text-reveal-line-inner text-reveal">resale, and scrap, it turns chaos </span></p>
+                        <p class="text-left text-xl md:text-2xl text-reveal-line mb-4"><span class="text-reveal-line-inner text-reveal">into one smooth experience.</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Infinite Loop Footer -->
+    <footer class="infinite-footer">
+        <div class="infinite-footer-content">
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+            <span class="infinite-footer-text">SWARNAKARSHAN LABS PVT LTD . KKOSH .</span>
+        </div>
+        <div class="footer-info">
+            <div class="footer-contact">
+                <a href="mailto:info@swarnakarshan.com">info@swarnakarshan.com</a>
+            </div>
+            <div class="footer-links">
+                <a href="#privacy-policy">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
-         new Vivus('fv_animation', {
-            type: 'scenario-sync',
-            duration: 48,
-            forceRender: false,
-            animTimingFunction: Vivus.EASE
+        // GSAP Text Reveal Animations Only
+        document.addEventListener('DOMContentLoaded', function() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Configure ScrollTrigger for better mobile touch support
+            ScrollTrigger.config({
+                autoRefreshEvents: "visibilitychange,DOMContentLoaded,load"
+            });
+
+            // Function to get mobile-friendly start position
+            function getStartPosition() {
+                const isMobile = window.innerWidth < 768;
+                // On mobile, trigger when element enters viewport
+                return isMobile ? 'top 90%' : 'top 80%';
+            }
+
+            // Set initial states for animations
+            gsap.set('[data-reveal="logo"]', { opacity: 0, scale: 0.8 });
+            gsap.set('.text-reveal-line-inner', { y: 100, opacity: 0 });
+
+            // Logo animation
+            gsap.to('[data-reveal="logo"]', {
+                opacity: 1,
+                scale: 1,
+                duration: 1.2,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: '[data-reveal="logo"]',
+                    start: getStartPosition(),
+                    once: true,
+                    invalidateOnRefresh: true,
+                    refreshPriority: 1
+                }
+            });
+
+            // Header section - lines reveal one by one when section comes into view
+            const headerLines = gsap.utils.toArray('[data-reveal="text"] .text-reveal-line-inner');
+            if (headerLines.length > 0) {
+                gsap.to(headerLines, {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: 'power3.out',
+                    stagger: 0.1,
+                    scrollTrigger: {
+                        trigger: '[data-reveal="text"]',
+                        start: getStartPosition(),
+                        once: true,
+                        invalidateOnRefresh: true,
+                        refreshPriority: 1
+                    }
+                });
+            }
+
+            // Incubation section - lines reveal one by one when section comes into view
+            const incubationLines = gsap.utils.toArray('.incubation-section .text-reveal-line-inner');
+            if (incubationLines.length > 0) {
+                gsap.to(incubationLines, {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: 'power3.out',
+                    stagger: 0.1,
+                    scrollTrigger: {
+                        trigger: '.incubation-section',
+                        start: getStartPosition(),
+                        once: true,
+                        invalidateOnRefresh: true,
+                        refreshPriority: 1
+                    }
+                });
+            }
+
+
+            // Launching Soon section - line reveal
+            const launchingLine = document.querySelector('.kosh-section .text-reveal-line-inner');
+            if (launchingLine) {
+                gsap.to(launchingLine, {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: '.kosh-section',
+                        start: getStartPosition(),
+                        once: true,
+                        invalidateOnRefresh: true,
+                        refreshPriority: 1
+                    }
+                });
+            }
+
+            // KOSH section - lines reveal one by one when section comes into view
+            const koshLines = gsap.utils.toArray('.kosh-section .text-reveal-line-inner');
+            if (koshLines.length > 0) {
+                gsap.to(koshLines, {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: 'power3.out',
+                    stagger: 0.1,
+                    scrollTrigger: {
+                        trigger: '.kosh-section',
+                        start: getStartPosition(),
+                        once: true,
+                        invalidateOnRefresh: true,
+                        refreshPriority: 1
+                    }
+                });
+            }
+
+            // Infinite Loop Footer Animation
+            const footerContent = document.querySelector('.infinite-footer-content');
+            if (footerContent) {
+                const firstText = footerContent.querySelector('.infinite-footer-text');
+                if (firstText) {
+                    // Get the width of one text element
+                    const textWidth = firstText.offsetWidth + 100; // 100px for padding
+                    
+                    // Create seamless infinite loop
+                    gsap.set(footerContent, { x: 0 });
+                    
+                    gsap.to(footerContent, {
+                        x: -textWidth,
+                        duration: 30,
+                        ease: 'none',
+                        repeat: -1
+                    });
+                }
+            }
+
+            // Refresh ScrollTrigger on window resize for mobile
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    ScrollTrigger.refresh();
+                }, 250);
+            });
+
+            // Force ScrollTrigger to update on touch scroll for mobile
+            let touchScrollTimer;
+            window.addEventListener('touchmove', function() {
+                clearTimeout(touchScrollTimer);
+                touchScrollTimer = setTimeout(function() {
+                    ScrollTrigger.update();
+                }, 100);
+            }, { passive: true });
+
+            // Also update on scroll for better mobile support
+            window.addEventListener('scroll', function() {
+                ScrollTrigger.update();
+            }, { passive: true });
+
+            // Initial refresh after a short delay to ensure everything is loaded
+            setTimeout(function() {
+                ScrollTrigger.refresh();
+            }, 500);
+
         });
+
+        // WebGL Particle Effect (not using GSAP)
+        const canvas = document.getElementById('webgl-canvas');
+        if (canvas && typeof THREE !== 'undefined') {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Create particles
+            const particleCount = 100;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 20;
+            }
+
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x000000,
+                size: 0.05,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+
+            camera.position.z = 5;
+
+            // Animate particles
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particleSystem.rotation.x += 0.001;
+                particleSystem.rotation.y += 0.001;
+                
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += Math.sin(Date.now() * 0.001 + i) * 0.0001;
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+                
+                renderer.render(scene, camera);
+            }
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
     </script>
 </body>
 </html>
+
