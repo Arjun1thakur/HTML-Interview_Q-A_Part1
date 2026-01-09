@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SWARNAKARSHAN LABS PVT LTD - KOSH</title>
+    <title>SWARNAKARSHAN LABS PVT LTD</title>
+    <link rel="icon" type="image/png" href="./favicon.png">
     <link rel="stylesheet" href="https://use.typekit.net/jmw2lpz.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
@@ -152,6 +153,57 @@
                 font-size: 150px;
             }
         } */
+
+        /* Custom Cursor for Logo Interaction */
+        .custom-cursor {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #000;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.2s ease-out;
+            display: none;
+        }
+
+        .custom-cursor.active {
+            display: block;
+        }
+
+        .custom-cursor.hover {
+            transform: scale(1.5);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-interactive {
+            cursor: none;
+            transition: transform 0.3s ease-out;
+        }
+
+        .logo-interactive:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Modern Hero Reveal Animations */
+        .hero-mask {
+            overflow: hidden;
+        }
+
+        .hero-text-mask {
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .custom-cursor {
+                display: none !important;
+            }
+            .logo-interactive {
+                cursor: default;
+            }
+        }
     </style>
 </head>
 <body class="bg-white text-black font-sans overflow-x-hidden">
@@ -161,11 +213,12 @@
     <div class="max-w-7xl mx-auto relative z-10">
         <!-- SWARNAKARSHAN LABS Logo and Name -->
         <header class="min-h-screen flex flex-col justify-center items-center text-center py-20 px-10 md:py-20 md:px-10">
-            <div class="flex justify-center mb-5 text-reveal" data-reveal="logo">
+            <div class="flex justify-center mb-5 text-reveal logo-interactive" data-reveal="logo" id="logo-container">
                 <div class="w-60 h-60 bg-black flex items-center justify-center">
                     <div class="w-40 h-40 bg-white rounded-full"></div>
                 </div>
             </div>
+            <div class="custom-cursor" id="custom-cursor"></div>
             <h1 class="text-2xl md:text-2xl font-bold tracking-wider uppercase leading-snug text-reveal" data-reveal="text">
                 <span class="text-reveal-line"><span class="text-reveal-line-inner">SWARNAKARSHAN</span></span><br>
                 <span class="text-reveal-line"><span class="text-reveal-line-inner">LABS PVT LTD</span></span>
@@ -285,63 +338,120 @@
             function getStartPosition() {
                 const isMobile = window.innerWidth < 768;
                 // On mobile, trigger when element enters viewport
-                return isMobile ? 'top 90%' : 'top 80%';
+                return isMobile ? 'top 95%' : 'top 85%';
             }
+            
+            // Create a master timeline to ensure proper sequencing
+            const masterTimeline = gsap.timeline();
 
-            // Set initial states for animations
-            gsap.set('[data-reveal="logo"]', { opacity: 0, scale: 0.8 });
-            gsap.set('.text-reveal-line-inner', { y: 100, opacity: 0 });
-
-            // Logo animation
-            gsap.to('[data-reveal="logo"]', {
-                opacity: 1,
-                scale: 1,
-                duration: 1.2,
-                ease: 'power3.out',
-                scrollTrigger: {
-                    trigger: '[data-reveal="logo"]',
-                    start: getStartPosition(),
-                    once: true,
-                    invalidateOnRefresh: true,
-                    refreshPriority: 1
-                }
+            // Set initial states for hero animations only
+            gsap.set('[data-reveal="logo"]', { 
+                opacity: 0, 
+                scale: 0.5,
+                rotation: -180,
+                filter: 'blur(20px)'
+            });
+            
+            // Set initial states for header text only (hero section)
+            gsap.set('[data-reveal="text"] .text-reveal-line-inner', { 
+                y: 100, 
+                opacity: 0,
+                filter: 'blur(10px)'
+            });
+            gsap.set('[data-reveal="text"] .text-reveal-line', {
+                clipPath: 'inset(0 100% 0 0)'
+            });
+            
+            // Set initial states for ALL other text-reveal-line-inner elements (for scroll animations)
+            gsap.set('.text-reveal-line-inner:not([data-reveal="text"] .text-reveal-line-inner)', { 
+                y: 100, 
+                opacity: 0
             });
 
-            // Header section - lines reveal one by one when section comes into view
+            // Modern Logo Animation - Play immediately on page load
+            const logoTimeline = gsap.timeline({
+                delay: 0.3
+            });
+
+            logoTimeline
+                .to('[data-reveal="logo"]', {
+                    opacity: 1,
+                    scale: 1,
+                    rotation: 0,
+                    filter: 'blur(0px)',
+                    duration: 1.5,
+                    ease: 'power4.out'
+                })
+                .to('[data-reveal="logo"]', {
+                    scale: 1.05,
+                    duration: 0.3,
+                    ease: 'power2.inOut',
+                    yoyo: true,
+                    repeat: 1
+                }, '-=0.5');
+
+            // Modern Header Text Animation - Play immediately after logo
             const headerLines = gsap.utils.toArray('[data-reveal="text"] .text-reveal-line-inner');
+            const headerLineContainers = gsap.utils.toArray('[data-reveal="text"] .text-reveal-line');
+            
             if (headerLines.length > 0) {
+                // Animate clip-path for each line container
+                headerLineContainers.forEach((container, i) => {
+                    gsap.to(container, {
+                        clipPath: 'inset(0 0% 0 0)',
+                        duration: 1.2,
+                        ease: 'power3.out',
+                        delay: 0.8 + (i * 0.15)
+                    });
+                });
+
+                // Animate text with blur and position
                 gsap.to(headerLines, {
                     y: 0,
                     opacity: 1,
-                    duration: 1,
+                    filter: 'blur(0px)',
+                    duration: 1.2,
                     ease: 'power3.out',
-                    stagger: 0.1,
-                    scrollTrigger: {
-                        trigger: '[data-reveal="text"]',
-                        start: getStartPosition(),
-                        once: true,
-                        invalidateOnRefresh: true,
-                        refreshPriority: 1
-                    }
+                    stagger: {
+                        amount: 0.6,
+                        from: 'start'
+                    },
+                    delay: 0.8
                 });
             }
 
             // Incubation section - lines reveal one by one when section comes into view
+            const incubationSection = document.querySelector('.incubation-section');
             const incubationLines = gsap.utils.toArray('.incubation-section .text-reveal-line-inner');
-            if (incubationLines.length > 0) {
-                gsap.to(incubationLines, {
-                    y: 0,
-                    opacity: 1,
-                    duration: 1,
-                    ease: 'power3.out',
-                    stagger: 0.1,
-                    scrollTrigger: {
-                        trigger: '.incubation-section',
-                        start: getStartPosition(),
-                        once: true,
-                        invalidateOnRefresh: true,
-                        refreshPriority: 1
-                    }
+            
+            if (incubationLines.length > 0 && incubationSection) {
+                incubationLines.forEach((line, index) => {
+                    gsap.to(line, {
+                        y: 0,
+                        opacity: 1,
+                        duration: 1,
+                        ease: 'power3.out',
+                        delay: index * 0.1,
+                        scrollTrigger: {
+                            trigger: incubationSection,
+                            start: getStartPosition(),
+                            end: 'bottom top',
+                            once: true,
+                            invalidateOnRefresh: true,
+                            refreshPriority: 1,
+                            onEnter: () => {
+                                // Force animation if ScrollTrigger fires
+                                gsap.to(line, {
+                                    y: 0,
+                                    opacity: 1,
+                                    duration: 1,
+                                    ease: 'power3.out',
+                                    delay: index * 0.1,
+                                    overwrite: true
+                                });
+                            }
+                        }
+                    });
                 });
             }
 
@@ -365,21 +475,37 @@
             }
 
             // KOSH section - lines reveal one by one when section comes into view
+            const koshSection = document.querySelector('.kosh-section');
             const koshLines = gsap.utils.toArray('.kosh-section .text-reveal-line-inner');
-            if (koshLines.length > 0) {
-                gsap.to(koshLines, {
-                    y: 0,
-                    opacity: 1,
-                    duration: 1,
-                    ease: 'power3.out',
-                    stagger: 0.1,
-                    scrollTrigger: {
-                        trigger: '.kosh-section',
-                        start: getStartPosition(),
-                        once: true,
-                        invalidateOnRefresh: true,
-                        refreshPriority: 1
-                    }
+            
+            if (koshLines.length > 0 && koshSection) {
+                koshLines.forEach((line, index) => {
+                    gsap.to(line, {
+                        y: 0,
+                        opacity: 1,
+                        duration: 1,
+                        ease: 'power3.out',
+                        delay: index * 0.1,
+                        scrollTrigger: {
+                            trigger: koshSection,
+                            start: getStartPosition(),
+                            end: 'bottom top',
+                            once: true,
+                            invalidateOnRefresh: true,
+                            refreshPriority: 1,
+                            onEnter: () => {
+                                // Force animation if ScrollTrigger fires
+                                gsap.to(line, {
+                                    y: 0,
+                                    opacity: 1,
+                                    duration: 1,
+                                    ease: 'power3.out',
+                                    delay: index * 0.1,
+                                    overwrite: true
+                                });
+                            }
+                        }
+                    });
                 });
             }
 
@@ -430,6 +556,156 @@
             setTimeout(function() {
                 ScrollTrigger.refresh();
             }, 500);
+            
+            // Enhanced scroll handler to manually trigger animations
+            let lastScrollTop = 0;
+            function checkAndAnimate() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Check incubation section
+                const incubationSection = document.querySelector('.incubation-section');
+                if (incubationSection) {
+                    const rect = incubationSection.getBoundingClientRect();
+                    const isVisible = rect.top < window.innerHeight * 0.9 && rect.bottom > 0;
+                    const incubationLines = gsap.utils.toArray('.incubation-section .text-reveal-line-inner');
+                    
+                    if (isVisible && incubationLines.length > 0) {
+                        incubationLines.forEach((line, index) => {
+                            const currentOpacity = gsap.getProperty(line, 'opacity');
+                            if (currentOpacity === 0 || currentOpacity < 0.1) {
+                                gsap.to(line, {
+                                    y: 0,
+                                    opacity: 1,
+                                    duration: 1,
+                                    ease: 'power3.out',
+                                    delay: index * 0.1,
+                                    overwrite: true
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                // Check KOSH section
+                const koshSection = document.querySelector('.kosh-section');
+                if (koshSection) {
+                    const rect = koshSection.getBoundingClientRect();
+                    const isVisible = rect.top < window.innerHeight * 0.9 && rect.bottom > 0;
+                    const koshLines = gsap.utils.toArray('.kosh-section .text-reveal-line-inner');
+                    
+                    if (isVisible && koshLines.length > 0) {
+                        koshLines.forEach((line, index) => {
+                            const currentOpacity = gsap.getProperty(line, 'opacity');
+                            if (currentOpacity === 0 || currentOpacity < 0.1) {
+                                gsap.to(line, {
+                                    y: 0,
+                                    opacity: 1,
+                                    duration: 1,
+                                    ease: 'power3.out',
+                                    delay: index * 0.1,
+                                    overwrite: true
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                lastScrollTop = scrollTop;
+            }
+            
+            // Check on scroll
+            window.addEventListener('scroll', function() {
+                ScrollTrigger.update();
+                checkAndAnimate();
+            }, { passive: true });
+            
+            // Check on touch move
+            window.addEventListener('touchmove', function() {
+                ScrollTrigger.update();
+                checkAndAnimate();
+            }, { passive: true });
+            
+            // Initial check
+            setTimeout(checkAndAnimate, 1000);
+
+            // Custom Cursor Interaction with Logo
+            const cursor = document.getElementById('custom-cursor');
+            const logoContainer = document.getElementById('logo-container');
+            let mouseX = 0, mouseY = 0;
+            let cursorX = 0, cursorY = 0;
+            let isHovering = false;
+
+            // Only show cursor on desktop
+            if (window.innerWidth > 768 && cursor && logoContainer) {
+                cursor.classList.add('active');
+
+                // Track mouse position
+                document.addEventListener('mousemove', (e) => {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                });
+
+                // Logo hover detection
+                logoContainer.addEventListener('mouseenter', () => {
+                    isHovering = true;
+                    cursor.classList.add('hover');
+                    gsap.to(logoContainer, {
+                        scale: 1.1,
+                        rotation: 5,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+
+                logoContainer.addEventListener('mouseleave', () => {
+                    isHovering = false;
+                    cursor.classList.remove('hover');
+                    gsap.to(logoContainer, {
+                        scale: 1,
+                        rotation: 0,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+
+                // Magnetic effect - cursor is attracted to logo center
+                function animateCursor() {
+                    const logoRect = logoContainer.getBoundingClientRect();
+                    const logoCenterX = logoRect.left + logoRect.width / 2;
+                    const logoCenterY = logoRect.top + logoRect.height / 2;
+
+                    if (isHovering) {
+                        // Magnetic effect - cursor moves towards logo center
+                        const dx = logoCenterX - mouseX;
+                        const dy = logoCenterY - mouseY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const maxDistance = 150;
+                        
+                        if (distance < maxDistance) {
+                            const force = (maxDistance - distance) / maxDistance;
+                            const magneticX = mouseX + dx * force * 0.3;
+                            const magneticY = mouseY + dy * force * 0.3;
+                            
+                            cursorX += (magneticX - cursorX) * 0.15;
+                            cursorY += (magneticY - cursorY) * 0.15;
+                        } else {
+                            cursorX += (mouseX - cursorX) * 0.1;
+                            cursorY += (mouseY - cursorY) * 0.1;
+                        }
+                    } else {
+                        // Normal smooth following
+                        cursorX += (mouseX - cursorX) * 0.1;
+                        cursorY += (mouseY - cursorY) * 0.1;
+                    }
+
+                    cursor.style.left = cursorX - 20 + 'px';
+                    cursor.style.top = cursorY - 20 + 'px';
+
+                    requestAnimationFrame(animateCursor);
+                }
+
+                animateCursor();
+            }
 
         });
 
