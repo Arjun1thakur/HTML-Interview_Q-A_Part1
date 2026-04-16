@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -656,6 +657,15 @@ input { font-family: inherit; }
     <div class="screen" id="screen-asset"></div>
     <div class="screen" id="screen-member"></div>
     <div class="screen" id="screen-onboarding-intro"></div>
+    <div class="screen" id="screen-ob-gate"></div>
+    <div class="screen" id="screen-ob-otp"></div>
+    <div class="screen" id="screen-ob-vehicle"></div>
+    <div class="screen" id="screen-ob-wow"></div>
+    <div class="screen" id="screen-ob-home"></div>
+    <div class="screen" id="screen-ob-electronics"></div>
+    <div class="screen" id="screen-ob-appliance"></div>
+    <div class="screen" id="screen-ob-family"></div>
+    <div class="screen" id="screen-ob-reveal"></div>
 
     <!-- Add Partner Sheet -->
     <div class="sheet-backdrop" id="partner-backdrop" onclick="closeFormSheet('partner')"></div>
@@ -1597,7 +1607,7 @@ function goTo(screen, params) {
   // Hide tab bar for full-screen experiences (AI, onboarding)
   const tabBar = document.getElementById('tab-bar');
   if (tabBar) {
-    const hide = screen === 'ai-ask' || screen === 'onboarding-intro';
+    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-');
     tabBar.style.display = hide ? 'none' : 'flex';
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
@@ -3229,52 +3239,592 @@ function renderMemberProfile(memberId) {
   `;
 }
 
-/* ============ ONBOARDING FLOW ============ */
+/* ============ ONBOARDING FLOW — 10 screens ============ */
+
+// Shared state for onboarding
+let obState = { name: '', household: '', phone: '', otp: ['', '', '', '', '', ''], vrn: '' };
+
+// Progress bar renderer — 5 dashes, filled based on step (1-5 after vehicle, 5 is reveal)
+function obProgressBar(step, total) {
+  // step = current visible step (1-5)
+  // Bars: completed (green), current (terracotta), upcoming (muted)
+  const bars = [];
+  for (let i = 1; i <= total; i++) {
+    let color = 'rgba(0,0,0,0.1)';
+    if (i < step) color = '#1f6638';
+    else if (i === step) color = '#A8432E';
+    bars.push(`<div style="flex: 1; height: 3px; border-radius: 2px; background: ${color};"></div>`);
+  }
+  return `<div style="display: flex; gap: 6px; flex: 1; max-width: 120px;">${bars.join('')}</div>`;
+}
+
+// Shared header for onboarding screens
+function obHeader(options) {
+  const { step, total, stepLabel, showBack = true, backTo, backLabel } = options;
+  const topMeta = stepLabel ? `<div style="text-align: center; font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500; margin-bottom: 12px;">${stepLabel}</div>` : '';
+  const backBtn = showBack
+    ? `<button class="back-btn" onclick="goTo('${backTo || 'home'}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>`
+    : `<div style="width: 34px;"></div>`;
+  const progressHtml = step && total ? obProgressBar(step, total) : '';
+  const counterHtml = step && total ? `<div style="font-size: 11px; color: #6b6660;">${step} of ${total}</div>` : '<div style="width: 34px;"></div>';
+  return `
+    ${topMeta}
+    <div style="padding: 0 16px 14px; display: flex; align-items: center; gap: 12px;">
+      ${backBtn}
+      ${progressHtml}
+      ${counterHtml}
+    </div>
+  `;
+}
+
+// 1. THE PROMISE
 function renderOnboardingIntro() {
   const scr = document.getElementById('screen-onboarding-intro');
   if (!scr) return;
   scr.innerHTML = `
     <div class="status-bar"></div>
-    <div class="screen-scroll" style="padding-bottom: 20px;">
-      <div style="padding: 20px;">
-        <button class="back-btn" onclick="goTo('settings')">${iconSvg('close', 18, '#1a1a1a')}</button>
+    <div class="screen-scroll">
+      <div style="padding: 26px 24px 0; text-align: center;">
+        <div style="font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500;">1 · THE PROMISE</div>
       </div>
-      <div style="padding: 40px 24px; text-align: center;">
-        <div style="font-size: 48px; font-weight: 500; letter-spacing: -1px;">KKOSH</div>
-        <div style="font-size: 13px; color: #A8432E; letter-spacing: 0.4px; margin-top: 6px;">Ownership. Organised.</div>
-        <div style="margin-top: 60px; font-size: 22px; font-weight: 500; line-height: 1.3; letter-spacing: -0.3px;">The operating system<br>for your household.</div>
-        <div style="margin-top: 14px; font-size: 13px; color: #6b6660; line-height: 1.5;">Every vehicle, home, appliance,<br>and family commitment. In one place.</div>
-      </div>
-      <div style="margin: 20px 16px; background: white; border-radius: 16px; padding: 18px;">
-        <div style="font-size: 11px; color: #6b6660; letter-spacing: 0.6px; font-weight: 500; margin-bottom: 14px;">WHAT YOU'LL DO IN 2 MINUTES</div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: #1a1a1a; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500;">1</div>
-          <div style="flex: 1; font-size: 13px;">Add your phone and household name</div>
+      <div style="padding: 48px 28px 0;">
+        <div style="font-size: 42px; font-weight: 500; letter-spacing: -1.2px; line-height: 1;">KKOSH</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 8px;">Ownership. Organised.</div>
+        <div style="margin-top: 48px; font-size: 22px; font-weight: 500; line-height: 1.3; letter-spacing: -0.3px; color: #1a1a1a;">
+          Your home runs on things.<br>They have dates, dues,<br>and documents.
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: #1a1a1a; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500;">2</div>
-          <div style="flex: 1; font-size: 13px;">Add your vehicle (just the RC number)</div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: #1a1a1a; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500;">3</div>
-          <div style="flex: 1; font-size: 13px;">See it come alive — docs, challans, insurance</div>
+        <div style="margin-top: 18px; font-size: 13px; color: #6b6660; line-height: 1.5;">
+          We keep them in one quiet place. Starting with your car — in 10 seconds.
         </div>
       </div>
-      <div style="margin: 20px 16px; padding: 14px 16px; background: rgba(168,67,46,0.06); border-radius: 12px; display: flex; align-items: center; gap: 10px;">
-        ${iconSvg('shield', 16, '#A8432E')}
-        <div style="font-size: 11px; color: #3a3834; line-height: 1.5;">Your data never leaves India. Use only your own documents and vehicles.</div>
+      <div style="padding: 40px 24px 0;">
+        <button class="primary-cta" onclick="goTo('ob-gate')">Show me →</button>
+        <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 14px;">30 seconds to set up</div>
       </div>
-      <div style="padding: 16px;">
-        <button class="primary-cta" onclick="onboardingComplete()">${iconSvg('arrow_right', 14, 'white')} Start setup</button>
-        <div class="secondary-action" onclick="goTo('home')">Skip — I'll explore first</div>
+    </div>
+  `;
+}
+
+// 2. THE GATE — name, household, phone
+function renderObGate() {
+  const scr = document.getElementById('screen-ob-gate');
+  if (!scr) return;
+  const valid = true; // Validation disabled for demo
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 1, total: 5, stepLabel: '2 · THE GATE', backTo: 'onboarding-intro' })}
+    <div class="screen-scroll">
+      <div style="padding: 12px 24px 0;">
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">First, let's get you in.</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">30 seconds. No email, no passwords.</div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">YOUR NAME</div>
+        <input type="text" class="text-input" placeholder="Khushwant" value="${obState.name}" oninput="obState.name = this.value; renderObGate()" style="margin-bottom: 18px;" />
+
+        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">HOUSEHOLD NAME</div>
+        <input type="text" class="text-input" placeholder="Sharma" value="${obState.household}" oninput="obState.household = this.value; renderObGate()" style="margin-bottom: 6px;" />
+        <div style="font-size: 10px; color: #9a958f; margin-bottom: 18px;">Usually your family surname</div>
+
+        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">PHONE NUMBER</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="padding: 12px 14px; border-radius: 10px; background: #F7F1E8; border: 1px solid rgba(0,0,0,0.08); font-size: 13px; color: #1a1a1a;">+91</div>
+          <input type="tel" class="text-input" placeholder="98 ·· ·· 3217" value="${obState.phone}" oninput="obState.phone = this.value; renderObGate()" style="flex: 1;" />
+        </div>
+        <div style="font-size: 10px; color: #9a958f; margin-bottom: 24px;">We'll send a 6-digit code</div>
+
+        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-otp')" : ''}" style="margin-top: 0;">Send verification code →</button>
+
+        <div style="text-align: center; font-size: 10px; color: #9a958f; margin-top: 14px; line-height: 1.5;">
+          By continuing you agree to Terms & Privacy.<br>Your data never leaves India.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 3. OTP
+function renderObOtp() {
+  const scr = document.getElementById('screen-ob-otp');
+  if (!scr) return;
+  const lastFour = obState.phone.replace(/\D/g, '').slice(-4);
+  const maskedPhone = lastFour ? `+91 98··· ${lastFour}` : '+91 98···3217';
+  const otpFilled = obState.otp.filter(d => d !== '').length;
+  const valid = true; // Validation disabled for demo
+  const boxes = [0,1,2,3,4,5].map(i => `
+    <input type="text" inputmode="numeric" maxlength="1" id="otp-${i}"
+      value="${obState.otp[i]}"
+      oninput="handleOtpInput(${i}, this.value)"
+      onkeydown="handleOtpKeydown(${i}, event)"
+      style="width: 44px; height: 52px; text-align: center; font-size: 20px; font-weight: 500; border-radius: 10px; background: ${obState.otp[i] ? '#ffffff' : '#F7F1E8'}; border: 1.5px solid ${obState.otp[i] ? '#1a1a1a' : 'rgba(0,0,0,0.08)'}; color: #1a1a1a; outline: none;" />
+  `).join('');
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 1, total: 5, stepLabel: '3 · OTP VERIFICATION', backTo: 'ob-gate' })}
+    <div class="screen-scroll">
+      <div style="padding: 12px 24px 0;">
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Enter the 6-digit code.</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">We sent it to ${maskedPhone}. <button onclick="goTo('ob-gate')" style="color: #1a1a1a; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; font-weight: 500; font-size: 13px;">Change number.</button></div>
+      </div>
+
+      <div style="padding: 28px 24px 0; display: flex; justify-content: center; gap: 8px;">
+        ${boxes}
+      </div>
+
+      <div style="text-align: center; padding: 18px 0 0; font-size: 11px; color: #6b6660;">Resend code in <span id="otp-timer">0:24</span></div>
+
+      <div style="padding: 28px 24px 0;">
+        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-vehicle')" : ''}" style="margin-top: 0;">Verify & continue →</button>
+        <div style="text-align: center; font-size: 10px; color: #9a958f; margin-top: 14px;">Code auto-detected from SMS</div>
+      </div>
+    </div>
+  `;
+  // Auto-focus first empty box
+  setTimeout(() => {
+    const firstEmpty = obState.otp.findIndex(d => d === '');
+    const idx = firstEmpty === -1 ? 5 : firstEmpty;
+    const el = document.getElementById('otp-' + idx);
+    if (el) el.focus();
+  }, 50);
+}
+
+function handleOtpInput(i, val) {
+  // Keep only last digit
+  const digit = (val || '').replace(/\D/g, '').slice(-1);
+  obState.otp[i] = digit;
+  if (digit && i < 5) {
+    const next = document.getElementById('otp-' + (i + 1));
+    if (next) next.focus();
+  }
+  renderObOtp();
+}
+function handleOtpKeydown(i, e) {
+  if (e.key === 'Backspace' && !obState.otp[i] && i > 0) {
+    const prev = document.getElementById('otp-' + (i - 1));
+    if (prev) prev.focus();
+  }
+}
+
+// 4. VEHICLE ADD
+function renderObVehicle() {
+  const scr = document.getElementById('screen-ob-vehicle');
+  if (!scr) return;
+  const cleanVrn = obState.vrn.replace(/\s/g, '').toUpperCase();
+  const valid = true; // Validation disabled for demo
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 1, total: 5, stepLabel: '4 · VEHICLE ADD (1 of 5)', backTo: 'ob-otp' })}
+    <div class="screen-scroll">
+      <div style="padding: 4px 24px 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
+          <span>🟢</span> FIRST · THE FAST PATH
+        </div>
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Add your first vehicle.</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
+          Just the registration number. We pull everything from Parivahan — owner, insurance, challans, PUC.
+        </div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">YOUR VEHICLE'S RC NUMBER</div>
+        <input type="text" class="text-input dark-border" placeholder="DL 3C AB 1234"
+          value="${obState.vrn}"
+          oninput="obState.vrn = this.value.toUpperCase(); renderObVehicle()"
+          style="font-size: 18px; font-weight: 500; letter-spacing: 1.5px; text-align: center; padding: 16px;" />
+
+        <div style="margin-top: 12px; padding: 12px 14px; background: rgba(168,67,46,0.06); border: 1px dashed rgba(168,67,46,0.3); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div style="font-size: 14px;">📸</div>
+          <div style="font-size: 12px; color: #A8432E; font-weight: 500;">Can't remember? Photo the RC book</div>
+        </div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-wow')" : ''}" style="margin-top: 0;">Pull vehicle details →</button>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px; justify-content: center;">
+          ${iconSvg('shield', 11, '#6b6660')}
+          <div style="font-size: 10px; color: #6b6660;">Verified through Parivahan · Use only your own vehicle</div>
+        </div>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center;">
+        <button onclick="goTo('ob-home')" style="font-size: 11px; color: #6b6660; text-decoration: underline; text-decoration-color: rgba(0,0,0,0.15); text-underline-offset: 3px;">I don't own a vehicle · Done for now</button>
+      </div>
+    </div>
+  `;
+}
+
+// 5. WOW MOMENT
+function renderObWow() {
+  const scr = document.getElementById('screen-ob-wow');
+  if (!scr) return;
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 1, total: 5, stepLabel: '5 · THE WOW MOMENT', backTo: 'ob-vehicle' })}
+    <div class="screen-scroll">
+      <div style="margin: 0 16px 16px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        ${iconSvg('check', 14, '#1f6638')}
+        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">Found on Parivahan in 2 seconds</div>
+      </div>
+
+      <div style="margin: 0 16px; background: white; border-radius: 16px; overflow: hidden;">
+        <div style="padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.05);">
+          <div style="width: 40px; height: 40px; border-radius: 12px; overflow: hidden;">${brandLogo('honda', 40)}</div>
+          <div>
+            <div style="font-size: 16px; font-weight: 500;">Honda City</div>
+            <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">2021 · Modern Steel · ZX CVT</div>
+            <div style="font-size: 10px; color: #9a958f; margin-top: 2px;">Registered to Rajinder Sharma</div>
+          </div>
+        </div>
+
+        <div style="padding: 14px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.05);">
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #8a5d09; font-weight: 500; margin-bottom: 8px;">⚠ NEEDS YOUR ATTENTION</div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px;">
+            <div style="width: 5px; height: 5px; border-radius: 50%; background: #B5341F;"></div>
+            <span style="color: #8a2818; font-weight: 500;">PUC expired</span>
+            <span style="color: #6b6660;">· 4 days ago</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+            <div style="width: 5px; height: 5px; border-radius: 50%; background: #C8870D;"></div>
+            <span style="color: #8a5d09; font-weight: 500;">2 challans pending</span>
+            <span style="color: #6b6660;">· ₹1,500</span>
+          </div>
+        </div>
+
+        <div style="padding: 14px 16px;">
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #1f6638; font-weight: 500; margin-bottom: 8px;">✓ ALSO TRACKED</div>
+          <div style="font-size: 11px; color: #3a3834; line-height: 1.6;">
+            Insurance valid until 18 Aug 2026<br>
+            Fitness valid until 2038 · Road tax paid
+          </div>
+        </div>
+      </div>
+
+      <div style="margin: 16px 16px 0; background: rgba(181,52,31,0.08); border-radius: 14px; padding: 16px;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+          <div style="font-size: 11px;">⚡</div>
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #8a2818; font-weight: 500;">FAST PATH</div>
+        </div>
+        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">Clear both in 10 seconds</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 4px;">Pay ₹1,500 challan · renew PUC ₹500</div>
+        <button onclick="openPaySheet({ assetId: 'honda-city', label: 'Challan + PUC', detail: 'Honda City · Fast path', amount: 2000 })" style="margin-top: 12px; width: 100%; padding: 12px; border-radius: 12px; background: #B5341F; color: white; font-size: 13px; font-weight: 500;">Fix now · ₹2,000 →</button>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center;">
+        <button onclick="goTo('ob-home')" style="font-size: 12px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Save & continue without fixing →</button>
+      </div>
+    </div>
+  `;
+}
+
+// 6. HOME ADD
+function renderObHome() {
+  const scr = document.getElementById('screen-ob-home');
+  if (!scr) return;
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 2, total: 5, stepLabel: '6 · HOME ADD (2 of 5)', backTo: 'ob-wow' })}
+    <div class="screen-scroll">
+      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        ${iconSvg('check', 14, '#1f6638')}
+        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">Honda City saved to your KKOSH</div>
+      </div>
+
+      <div style="padding: 4px 24px 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
+          <span>🏡</span> NEXT · YOUR HOME
+        </div>
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Where does your family live?</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
+          We'll track property tax, society dues, electricity, and help you during registration or sale.
+        </div>
+      </div>
+
+      <div style="padding: 22px 16px 0;">
+        <div style="background: white; border-radius: 14px; padding: 14px;">
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 12px;">SCAN ONE DOCUMENT</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(168,67,46,0.08); border: 1.5px solid #A8432E; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="font-size: 22px;">📄</div>
+              <div style="font-size: 11px; font-weight: 500; color: #1a1a1a;">Electricity bill</div>
+              <div style="font-size: 9px; color: #A8432E; font-weight: 500;">Fastest</div>
+            </button>
+            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(0,0,0,0.03); border: 1px solid transparent; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="font-size: 22px;">📜</div>
+              <div style="font-size: 11px; font-weight: 500;">Sale deed</div>
+              <div style="font-size: 9px; color: #6b6660;">If you own</div>
+            </button>
+            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(0,0,0,0.03); border: 1px solid transparent; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div style="font-size: 22px;">📋</div>
+              <div style="font-size: 11px; font-weight: 500;">Rent agreement</div>
+              <div style="font-size: 9px; color: #6b6660;">If you rent</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <button class="form-save-btn" onclick="goTo('ob-electronics')" style="margin-top: 0;">Scan electricity bill →</button>
+        <div style="text-align: center; margin-top: 14px;">
+          <button onclick="goTo('ob-electronics')" style="font-size: 12px; color: #6b6660;">Prefer to type it? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+        </div>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
+        <button onclick="goTo('ob-electronics')" style="font-size: 11px; color: #6b6660; padding: 12px;">No home to add · Done for now</button>
+      </div>
+    </div>
+  `;
+}
+
+// 7. ELECTRONICS
+function renderObElectronics() {
+  const scr = document.getElementById('screen-ob-electronics');
+  if (!scr) return;
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 3, total: 5, stepLabel: '7 · ELECTRONICS (3 of 5)', backTo: 'ob-home' })}
+    <div class="screen-scroll">
+      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        ${iconSvg('check', 14, '#1f6638')}
+        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">2 things in your KKOSH so far</div>
+      </div>
+
+      <div style="padding: 4px 24px 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
+          <span>📱</span> NEXT · PHONE OR LAPTOP
+        </div>
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Your high-value electronics.</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
+          We save IMEI, warranty, AppleCare, track service history and help if stolen.
+        </div>
+      </div>
+
+      <div style="padding: 22px 16px 0;">
+        <div style="background: white; border: 1.5px solid #A8432E; border-radius: 14px; overflow: hidden;">
+          <div style="padding: 6px 12px; background: rgba(168,67,46,0.1); border-bottom: 0.5px solid rgba(168,67,46,0.2);">
+            <div style="font-size: 9px; letter-spacing: 0.5px; color: #A8432E; font-weight: 600;">⚡ ONE TAP</div>
+          </div>
+          <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; overflow: hidden;">${brandLogo('apple_simple', 36)}</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500;">iPhone 14 · 128GB</div>
+              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Midnight · IMEI verified</div>
+              <div style="font-size: 10px; color: #1f6638; margin-top: 2px;">We detected this phone</div>
+            </div>
+          </div>
+          <button onclick="goTo('ob-appliance')" style="width: 100%; padding: 14px; background: #A8432E; color: white; font-size: 13px; font-weight: 500; border-radius: 0;">Add my iPhone 14 →</button>
+        </div>
+
+        <div style="text-align: center; font-size: 10px; color: #9a958f; letter-spacing: 0.5px; margin: 20px 0 12px;">OR ADD DIFFERENT ELECTRONIC</div>
+
+        <button onclick="goTo('ob-appliance')" style="width: 100%; background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; text-align: left;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.08); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 18px;">📸</span>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500;">Laptop, iPad, camera · anything else</div>
+            <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Snap the purchase invoice</div>
+          </div>
+          ${iconSvg('chevron', 14, '#9a958f')}
+        </button>
+
+        <div style="text-align: center; margin-top: 14px;">
+          <button onclick="goTo('ob-appliance')" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+        </div>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
+        <button onclick="goTo('ob-appliance')" style="font-size: 11px; color: #6b6660; padding: 12px;">No electronics to add · Done for now</button>
+      </div>
+    </div>
+  `;
+}
+
+// 8. APPLIANCE
+function renderObAppliance() {
+  const scr = document.getElementById('screen-ob-appliance');
+  if (!scr) return;
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 4, total: 5, stepLabel: '8 · APPLIANCE (4 of 5)', backTo: 'ob-electronics' })}
+    <div class="screen-scroll">
+      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        ${iconSvg('check', 14, '#1f6638')}
+        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">3 things in your KKOSH so far</div>
+      </div>
+
+      <div style="padding: 4px 24px 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
+          <span>❄️</span> NEXT · HOME APPLIANCES
+        </div>
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">AC, fridge, washing machine?</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
+          Most people forget their AMC expired until it's too late. Add one appliance — we track warranty, compressor cover, filter cleaning, AMC renewals.
+        </div>
+      </div>
+
+      <div style="padding: 22px 16px 0;">
+        <div style="background: white; border-radius: 14px; padding: 16px;">
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500; margin-bottom: 10px;">SNAP A PURCHASE INVOICE</div>
+          <div style="padding: 14px; background: rgba(168,67,46,0.05); border: 1px dashed rgba(168,67,46,0.3); border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.15); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 16px;">📸</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 500;">We pull automatically:</div>
+              <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Brand · model · capacity · purchase · warranty · dealer</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+            <button onclick="goTo('ob-family')" style="padding: 11px; border-radius: 10px; background: transparent; border: 1.5px solid #A8432E; color: #A8432E; font-size: 12px; font-weight: 500;">Take photo</button>
+            <button onclick="goTo('ob-family')" style="padding: 11px; border-radius: 10px; background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #1a1a1a; font-size: 12px; font-weight: 500;">Pick from gallery</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <button class="form-save-btn" onclick="goTo('ob-family')" style="margin-top: 0;">Scan invoice →</button>
+        <div style="text-align: center; margin-top: 14px;">
+          <button onclick="goTo('ob-family')" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+        </div>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
+        <button onclick="goTo('ob-family')" style="font-size: 11px; color: #6b6660; padding: 12px;">No appliances to add · Done for now</button>
+      </div>
+    </div>
+  `;
+}
+
+// 9. FAMILY
+function renderObFamily() {
+  const scr = document.getElementById('screen-ob-family');
+  if (!scr) return;
+  const userInitial = (obState.name || 'K').charAt(0).toUpperCase();
+  const userName = obState.name || 'Khushwant';
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    ${obHeader({ step: 5, total: 5, stepLabel: '9 · FAMILY (5 of 5)', backTo: 'ob-appliance' })}
+    <div class="screen-scroll">
+      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        ${iconSvg('check', 14, '#1f6638')}
+        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">4 things in your KKOSH · last step</div>
+      </div>
+
+      <div style="padding: 4px 24px 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
+          <span>👥</span> FINALLY · YOUR FAMILY
+        </div>
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Who lives with you?</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
+          Your things belong to people. Add your family so we know whose insurance is due, whose phone needs recharge, whose loan is on EMI.
+        </div>
+      </div>
+
+      <div style="padding: 22px 16px 0;">
+        <div style="background: white; border-radius: 14px; padding: 14px;">
+          <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.06);">
+            <div class="avatar-lg self" style="width: 40px; height: 40px; font-size: 13px;">${userInitial}</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500;">${userName}</div>
+              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">You · head of household</div>
+            </div>
+            <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.06); color: #1a1a1a; letter-spacing: 0.4px; font-weight: 500;">YOU</span>
+          </div>
+          <button onclick="showToast('Add family member')" style="width: 100%; padding: 12px 0 0; display: flex; align-items: center; gap: 12px; text-align: left;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed rgba(168,67,46,0.35); display: flex; align-items: center; justify-content: center;">
+              ${iconSvg('plus', 16, '#A8432E')}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #A8432E; font-weight: 500;">Add a family member</div>
+              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Name · relationship to you</div>
+            </div>
+          </button>
+        </div>
+
+        <div style="margin-top: 14px; background: rgba(0,0,0,0.03); border-radius: 12px; padding: 14px;">
+          <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">COMMON RELATIONSHIPS</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${['Spouse', 'Child', 'Parent', 'Sibling'].map(r =>
+              `<button onclick="showToast('+ Add ${r}')" style="padding: 7px 12px; border-radius: 16px; background: white; border: 0.5px solid rgba(0,0,0,0.08); font-size: 12px; font-weight: 500; color: #1a1a1a;">+ ${r}</button>`
+            ).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 22px 24px 0;">
+        <button class="form-save-btn" onclick="goTo('ob-reveal')" style="margin-top: 0;">Add family member →</button>
+      </div>
+
+      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
+        <button onclick="goTo('ob-reveal')" style="font-size: 11px; color: #6b6660; padding: 12px;">I live alone · <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Finish & go home →</span></button>
+      </div>
+    </div>
+  `;
+}
+
+// 10. REVEAL
+function renderObReveal() {
+  const scr = document.getElementById('screen-ob-reveal');
+  if (!scr) return;
+  const householdName = obState.household || 'Sharma';
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    <div style="padding: 14px 16px 0; display: flex; justify-content: center;">
+      <div style="font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500;">10 · THE REVEAL</div>
+    </div>
+    <div class="screen-scroll">
+      <div style="padding: 28px 24px 0; text-align: center;">
+        <div style="font-size: 11px; letter-spacing: 0.6px; color: #C9A646; font-weight: 500;">✨ YOUR HOUSEHOLD IS READY</div>
+        <div style="margin-top: 10px; font-size: 26px; font-weight: 500; letter-spacing: -0.4px;">Meet your KKOSH.</div>
+      </div>
+
+      <div style="margin: 26px 16px 0; background: white; border-radius: 18px; padding: 24px 20px; text-align: center;">
+        <div style="font-size: 32px; font-weight: 500; letter-spacing: -0.8px; line-height: 1;">KKOSH</div>
+        <div style="font-size: 12px; color: #6b6660; margin-top: 6px;">${householdName} household</div>
+
+        <div style="display: flex; justify-content: center; margin-top: 16px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #A8432E; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white;">R</div>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #A8432E; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">S</div>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #1a1a1a; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">K</div>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #9a958f; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">R</div>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #9a958f; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">R</div>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 0.5px solid rgba(0,0,0,0.06); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;">
+          <div>
+            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">5</div>
+            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">PEOPLE</div>
+          </div>
+          <div>
+            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">5</div>
+            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">THINGS</div>
+          </div>
+          <div>
+            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">₹42k</div>
+            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">MONEY</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 30px 24px 0; text-align: center;">
+        <div style="font-size: 13px; color: #6b6660; line-height: 1.5;">
+          Next time something expires,<br>we'll find you before it finds you.
+        </div>
+      </div>
+
+      <div style="padding: 28px 16px 0;">
+        <button class="primary-cta" onclick="onboardingComplete()">Enter your KKOSH →</button>
       </div>
     </div>
   `;
 }
 
 function onboardingComplete() {
-  showToast('Onboarding · full flow coming soon');
-  setTimeout(() => goTo('home'), 1200);
+  // Reset expansion state so user lands clean on Home
+  showToast('Welcome to KKOSH');
+  setTimeout(() => goTo('home'), 800);
 }
 
 /* Extend renderAll to include asset + member renderers if on those screens */
@@ -3282,6 +3832,15 @@ const originalRenderAll = renderAll;
 renderAll = function() {
   originalRenderAll();
   if (typeof renderOnboardingIntro === 'function') renderOnboardingIntro();
+  if (typeof renderObGate === 'function') renderObGate();
+  if (typeof renderObOtp === 'function') renderObOtp();
+  if (typeof renderObVehicle === 'function') renderObVehicle();
+  if (typeof renderObWow === 'function') renderObWow();
+  if (typeof renderObHome === 'function') renderObHome();
+  if (typeof renderObElectronics === 'function') renderObElectronics();
+  if (typeof renderObAppliance === 'function') renderObAppliance();
+  if (typeof renderObFamily === 'function') renderObFamily();
+  if (typeof renderObReveal === 'function') renderObReveal();
   // Re-render current asset/member if we're on that screen
   if (state.currentScreen === 'asset' && window._currentAssetId) renderAssetCard(window._currentAssetId);
   if (state.currentScreen === 'member' && window._currentMemberId) renderMemberProfile(window._currentMemberId);
