@@ -666,6 +666,80 @@ input { font-family: inherit; }
     <div class="screen" id="screen-ob-appliance"></div>
     <div class="screen" id="screen-ob-family"></div>
     <div class="screen" id="screen-ob-reveal"></div>
+    <div class="screen" id="screen-ocr-review"></div>
+    <div class="screen" id="screen-ocr-confirm"></div>
+
+    <!-- Add Vehicle Sheet -->
+    <div class="sheet-backdrop" id="addVehicle-backdrop" onclick="closeFormSheet('addVehicle')"></div>
+    <div class="sheet tall" id="addVehicle-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title">Add Vehicle</div>
+        <button class="sheet-close" onclick="closeFormSheet('addVehicle')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="addVehicle-form-body"></div>
+    </div>
+
+    <!-- Add Property Sheet -->
+    <div class="sheet-backdrop" id="addProperty-backdrop" onclick="closeFormSheet('addProperty')"></div>
+    <div class="sheet tall" id="addProperty-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title">Add Property</div>
+        <button class="sheet-close" onclick="closeFormSheet('addProperty')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="addProperty-form-body"></div>
+    </div>
+
+    <!-- Add Family Member Sheet -->
+    <div class="sheet-backdrop" id="addFamily-backdrop" onclick="closeFormSheet('addFamily')"></div>
+    <div class="sheet tall" id="addFamily-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title">Add Family Member</div>
+        <button class="sheet-close" onclick="closeFormSheet('addFamily')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="addFamily-form-body"></div>
+    </div>
+
+    <!-- Add Loan Sheet -->
+    <div class="sheet-backdrop" id="addLoan-backdrop" onclick="closeFormSheet('addLoan')"></div>
+    <div class="sheet tall" id="addLoan-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title">Add Loan or EMI</div>
+        <button class="sheet-close" onclick="closeFormSheet('addLoan')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="addLoan-form-body"></div>
+    </div>
+
+    <!-- Archive Asset Sheet -->
+    <div class="sheet-backdrop" id="archive-backdrop" onclick="closeFormSheet('archive')"></div>
+    <div class="sheet tall" id="archive-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title">Archive this asset</div>
+        <button class="sheet-close" onclick="closeFormSheet('archive')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="archive-form-body"></div>
+    </div>
+
+    <!-- Pre-scan Sheet (Appliance / Electronics / Other) -->
+    <div class="sheet-backdrop" id="preScan-backdrop" onclick="closeFormSheet('preScan')"></div>
+    <div class="sheet tall" id="preScan-sheet">
+      <div class="sheet-handle"></div>
+      <div id="preScan-form-body"></div>
+    </div>
 
     <!-- Add Partner Sheet -->
     <div class="sheet-backdrop" id="partner-backdrop" onclick="closeFormSheet('partner')"></div>
@@ -1607,7 +1681,7 @@ function goTo(screen, params) {
   // Hide tab bar for full-screen experiences (AI, onboarding)
   const tabBar = document.getElementById('tab-bar');
   if (tabBar) {
-    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-');
+    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-') || screen.startsWith('ocr-');
     tabBar.style.display = hide ? 'none' : 'flex';
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
@@ -1634,17 +1708,17 @@ function closeAddSheet() {
 }
 function handleAdd(type) {
   closeAddSheet();
+  if (type === 'vehicle') { setTimeout(() => openAddVehicle(), 150); return; }
+  if (type === 'property') { setTimeout(() => openAddProperty(), 150); return; }
+  if (type === 'appliance') { setTimeout(() => openPreScan('appliance'), 150); return; }
+  if (type === 'electronic') { setTimeout(() => openPreScan('electronic'), 150); return; }
+  if (type === 'other') { setTimeout(() => openPreScan('other'), 150); return; }
+  if (type === 'family') { setTimeout(() => openAddFamily(), 150); return; }
+  if (type === 'loan') { setTimeout(() => openAddLoan(), 150); return; }
   const flows = {
-    vehicle: 'Vehicle · VRN fetch via Parivahan',
-    property: 'Property · bill or deed scan',
-    electronic: 'Electronic · invoice scan',
-    appliance: 'Appliance · invoice scan',
-    other: 'Other · high-value item',
-    loan: 'Loan / EMI · connect bank or manual',
     sip: 'SIP · connect broker or manual',
     insurance: 'Insurance · policy scan',
-    education: 'Education fee · school details',
-    family: 'Family member · name + relationship'
+    education: 'Education fee · school details'
   };
   showToast('Flow: ' + flows[type]);
 }
@@ -2315,7 +2389,7 @@ function renderAssetCard(assetId) {
       <button class="primary-cta" onclick="openAiAsk('${t.id}')">${iconSvg('sparkle', 14, 'white')} Ask about your ${shortName}</button>
     </div>
     <div style="text-align: center; padding: 8px 16px 0;">
-      <button onclick="showToast('${archiveLabel}')" style="font-size: 10px; color: #9a958f; padding: 4px 8px;">${archiveLabel}</button>
+      <button onclick="openArchiveSheet('${t.id}')" style="font-size: 10px; color: #9a958f; padding: 4px 8px;">${archiveLabel}</button>
     </div>
   `;
 
@@ -2500,7 +2574,7 @@ function renderPartnerForm(assetId) {
     <div class="field-label">Phone (optional)</div>
     <input type="tel" class="text-input" placeholder="+91 98765 43210" oninput="formState.selections.phone = this.value" style="margin-bottom: 4px;" />
 
-    <button id="partner-save-btn" class="form-save-btn disabled" onclick="savePartner()">Save Partner</button>
+    <button id="partner-save-btn" class="form-save-btn" onclick="savePartner()">Save Partner</button>
   `;
   refreshPartnerBtn();
 }
@@ -2510,7 +2584,7 @@ function refreshPartnerBtn() {
   const valid = !!formState.selections.name && formState.selections.name.trim().length > 0 && !!formState.selections.role;
   btn.classList.toggle('disabled', !valid);
 }
-function savePartner() {
+function savePartner() { formState.selections.name = formState.selections.name || "Demo Partner"; formState.selections.role = formState.selections.role || "Service";
   if (!formState.selections.name || !formState.selections.role) return;
   closeFormSheet('partner');
   showToast(`${formState.selections.name} added as ${formState.selections.role}`);
@@ -2545,7 +2619,7 @@ function renderReminderForm(assetId) {
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Use OEM filter only" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
-    <button id="reminder-save-btn" class="form-save-btn disabled" onclick="saveReminder()">Save Reminder</button>
+    <button id="reminder-save-btn" class="form-save-btn" onclick="saveReminder()">Save Reminder</button>
   `;
   refreshReminderBtn();
 }
@@ -2555,7 +2629,7 @@ function refreshReminderBtn() {
   const valid = !!formState.selections.task && formState.selections.task.trim().length > 0;
   btn.classList.toggle('disabled', !valid);
 }
-function saveReminder() {
+function saveReminder() { formState.selections.task = formState.selections.task || "Demo reminder";
   if (!formState.selections.task) return;
   closeFormSheet('reminder');
   showToast(`Reminder set: ${formState.selections.task}`);
@@ -2597,7 +2671,7 @@ function renderComponentForm(assetId) {
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Replaced all 4 tyres" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
-    <button id="component-save-btn" class="form-save-btn disabled" onclick="saveComponent()">Save Component</button>
+    <button id="component-save-btn" class="form-save-btn" onclick="saveComponent()">Save Component</button>
   `;
   refreshComponentBtn();
 }
@@ -2607,7 +2681,7 @@ function refreshComponentBtn() {
   const valid = !!formState.selections.componentType && !!formState.selections.brand && formState.selections.brand.trim().length > 0;
   btn.classList.toggle('disabled', !valid);
 }
-function saveComponent() {
+function saveComponent() { formState.selections.brand = formState.selections.brand || "Demo brand"; formState.selections.componentType = formState.selections.componentType || "other";
   if (!formState.selections.brand || !formState.selections.componentType) return;
   closeFormSheet('component');
   showToast(`Component saved: ${formState.selections.brand}`);
@@ -2636,7 +2710,7 @@ function renderServiceForm(assetId) {
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Used Mobil 1 synthetic" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
-    <button id="service-save-btn" class="form-save-btn disabled" onclick="saveService()">Save Service Log</button>
+    <button id="service-save-btn" class="form-save-btn" onclick="saveService()">Save Service Log</button>
   `;
   formState.selections.date = today;
   refreshServiceBtn();
@@ -2647,7 +2721,7 @@ function refreshServiceBtn() {
   const valid = !!formState.selections.task && formState.selections.task.trim().length > 0;
   btn.classList.toggle('disabled', !valid);
 }
-function saveService() {
+function saveService() { formState.selections.task = formState.selections.task || "Demo service";
   if (!formState.selections.task) return;
   closeFormSheet('service');
   showToast(`Service logged: ${formState.selections.task}`);
@@ -2724,23 +2798,58 @@ function confirmPay() {
 function openAiAsk(assetId) {
   const t = getThingById(assetId);
   if (!t) return;
-  renderAiAskScreen(t);
+  window._aiContext = { type: 'asset', data: t, backTo: 'asset', backParams: { assetId } };
+  renderAiAskScreen();
   goTo('ai-ask');
-  window._currentAiAssetId = assetId;
 }
-function renderAiAskScreen(t) {
+
+function openAiAskMember(memberId) {
+  const m = getMemberById(memberId);
+  if (!m) return;
+  window._aiContext = { type: 'member', data: m, backTo: 'member', backParams: { memberId } };
+  renderAiAskScreen();
+  goTo('ai-ask');
+}
+
+function renderAiAskScreen() {
   const scr = document.getElementById('screen-ai-ask');
   if (!scr) return;
+  const ctx = window._aiContext;
+  if (!ctx) return;
 
-  // Asset-specific prompts
-  const promptsByCat = {
-    vehicles: ['Is my insurance valid?', 'When is my next service due?', 'What does my warranty cover?', 'Check my challan status'],
-    property: ['Property tax details?', 'Utility trends?', 'Society dues breakdown?', 'Maintenance history?'],
-    electronics: ['Warranty expiry?', 'How to claim support?', 'Accessories compatibility?', 'Software update status?'],
-    appliances: ['When to service next?', 'Filter change schedule?', 'Energy consumption?', 'AMC details?'],
-    other: ['Insurance valuation?', 'Appraisal history?', 'Care tips?', 'Claim process?']
-  };
-  const prompts = promptsByCat[t.category] || promptsByCat.other;
+  let name, subtitle, prompts, backClick;
+
+  if (ctx.type === 'member') {
+    const m = ctx.data;
+    name = m.short;
+    subtitle = `${m.role}${m.self ? ' · you' : ''}`;
+    backClick = `goTo('member', { memberId: '${m.id}' })`;
+    // Member-specific prompts based on what they own
+    const theirThings = getActiveThings().filter(t => t.assignees.includes(m.id));
+    const hasVehicle = theirThings.some(t => t.category === 'vehicles');
+    const hasProperty = theirThings.some(t => t.category === 'property');
+    prompts = [];
+    if (m.alert) prompts.push(m.alert.includes('insurance') ? 'Is her health insurance valid?' : `Resolve: ${m.alert}`);
+    if (hasVehicle) prompts.push(`What does ${m.short} drive?`);
+    if (hasProperty) prompts.push(`${m.short}'s property documents?`);
+    if (m.monthly > 0) prompts.push(`${m.short}'s monthly commitments?`);
+    prompts.push(`What ${m.short} pays next month`);
+    prompts = prompts.slice(0, 4);
+  } else {
+    const t = ctx.data;
+    name = t.name;
+    subtitle = t.sub;
+    backClick = `goTo('asset', { assetId: '${t.id}' })`;
+    const promptsByCat = {
+      vehicles: ['Is my insurance valid?', 'When is my next service due?', 'What does my warranty cover?', 'Check my challan status'],
+      property: ['Property tax details?', 'Utility trends?', 'Society dues breakdown?', 'Maintenance history?'],
+      electronics: ['Warranty expiry?', 'How to claim support?', 'Accessories compatibility?', 'Software update status?'],
+      appliances: ['When to service next?', 'Filter change schedule?', 'Energy consumption?', 'AMC details?'],
+      other: ['Insurance valuation?', 'Appraisal history?', 'Care tips?', 'Claim process?']
+    };
+    prompts = promptsByCat[t.category] || promptsByCat.other;
+  }
+
   const promptChips = prompts.map(p =>
     `<button class="ai-chip" onclick="sendAiPrompt('${p.replace(/'/g, "\\'")}')">${p}</button>`
   ).join('');
@@ -2748,12 +2857,12 @@ function renderAiAskScreen(t) {
   scr.innerHTML = `
     <div class="status-bar"></div>
     <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.06);">
-      <button class="back-btn" onclick="goTo('asset', { assetId: '${t.id}' })">
+      <button class="back-btn" onclick="${backClick}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </button>
       <div style="flex: 1;">
         <div style="font-size: 16px; font-weight: 500;">Ask KKOSH AI</div>
-        <div style="font-size: 11px; color: #6b6660; margin-top: 1px;">About: ${t.name}</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 1px;">About: ${name}</div>
       </div>
     </div>
     <div class="screen-scroll" style="padding-bottom: 90px;">
@@ -2761,11 +2870,11 @@ function renderAiAskScreen(t) {
         <div class="ai-bot-face">🤖</div>
       </div>
       <div class="ai-prompt-title">How can I help?</div>
-      <div class="ai-prompt-sub">I know everything about your ${t.name}.</div>
+      <div class="ai-prompt-sub">I know everything about ${ctx.type === 'member' ? name : 'your ' + name}.</div>
       <div class="ai-chips">${promptChips}</div>
     </div>
     <div class="ai-chat-input">
-      <input type="text" class="ai-chat-field" placeholder="Ask about your asset..." onkeydown="if(event.key==='Enter' && this.value.trim()) { sendAiPrompt(this.value); this.value=''; }" />
+      <input type="text" class="ai-chat-field" placeholder="Ask anything..." onkeydown="if(event.key==='Enter' && this.value.trim()) { sendAiPrompt(this.value); this.value=''; }" />
       <button class="ai-send-btn" onclick="var el=this.previousElementSibling; if(el.value.trim()){ sendAiPrompt(el.value); el.value=''; }">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
       </button>
@@ -2790,6 +2899,478 @@ function openPayForProtection(assetId, label, detail, amount) {
 }
 function openPayForUtility(assetId, label, detail, amount) {
   openPaySheet({ assetId, label, detail: `${label} · ${detail.split('·')[0].trim()}`, amount });
+}
+
+/* ============ PRE-SCAN SHEET (Appliance / Electronics / Other) ============ */
+let preScanCategory = null;
+
+function openPreScan(category) {
+  preScanCategory = category;
+  document.getElementById('preScan-backdrop').classList.add('active');
+  document.getElementById('preScan-sheet').classList.add('active');
+  renderPreScan();
+}
+
+function renderPreScan() {
+  const body = document.getElementById('preScan-form-body');
+  if (!body) return;
+
+  const configs = {
+    appliance: {
+      title: 'Add Appliance',
+      desc: "Most people forget their AMC expired until it's too late. We track warranty, compressor cover, filter cleaning, AMC renewals.",
+      label: 'SNAP A PURCHASE INVOICE',
+      autoDesc: 'Brand · model · capacity · purchase · warranty · dealer',
+      tiles: [
+        { icon: '❄️', label: 'Split AC' },
+        { icon: '🧊', label: 'Fridge' },
+        { icon: '👕', label: 'Washer' },
+        { icon: '📺', label: 'TV / Display' },
+        { icon: '🔥', label: 'Geyser' },
+        { icon: '🔧', label: 'Other' }
+      ],
+      ocrPreset: 'appliance_confident',
+      scanLabel: 'Scan invoice →'
+    },
+    electronic: {
+      title: 'Add Electronics',
+      desc: 'We save IMEI, warranty, AppleCare, track service history and help if stolen.',
+      label: 'SNAP A PURCHASE INVOICE',
+      autoDesc: 'Brand · model · IMEI · purchase · warranty',
+      tiles: [
+        { icon: '📱', label: 'Phone' },
+        { icon: '💻', label: 'Laptop' },
+        { icon: '🎧', label: 'Audio' },
+        { icon: '📷', label: 'Camera' },
+        { icon: '⌚', label: 'Wearable' },
+        { icon: '🔧', label: 'Other' }
+      ],
+      ocrPreset: 'electronic_confident',
+      scanLabel: 'Scan invoice →'
+    },
+    other: {
+      title: 'Add High-Value Item',
+      desc: 'Jewellery, instruments, art, collectibles — anything worth tracking. We store insurance, appraisal, and care history.',
+      label: 'SNAP AN INVOICE OR CERTIFICATE',
+      autoDesc: 'Type · material · weight · purchase · estimated value',
+      tiles: [
+        { icon: '💍', label: 'Jewellery' },
+        { icon: '🎸', label: 'Instrument' },
+        { icon: '🎨', label: 'Art' },
+        { icon: '⌚', label: 'Watch' },
+        { icon: '🚲', label: 'Bicycle' },
+        { icon: '📦', label: 'Other' }
+      ],
+      ocrPreset: 'appliance_confident',
+      scanLabel: 'Scan document →'
+    }
+  };
+
+  const c = configs[preScanCategory] || configs.appliance;
+
+  const tilesHtml = c.tiles.map(t =>
+    `<button onclick="preScanSelectType('${t.label}')" style="padding: 14px 6px; background: rgba(0,0,0,0.03); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px solid transparent;">
+      <div style="font-size: 22px;">${t.icon}</div>
+      <div style="font-size: 11px; font-weight: 500;">${t.label}</div>
+    </button>`
+  ).join('');
+
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <div style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">${c.title}</div>
+      <button class="sheet-close" onclick="closeFormSheet('preScan')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">${c.desc}</div>
+
+    <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">What are you adding?</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px;">
+      ${tilesHtml}
+    </div>
+
+    <div style="background: white; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+      <div style="font-size: 10px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500; margin-bottom: 10px;">${c.label}</div>
+      <div style="padding: 14px; background: rgba(168,67,46,0.05); border: 1px dashed rgba(168,67,46,0.3); border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="font-size: 16px;">📸</span>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">We pull automatically:</div>
+          <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">${c.autoDesc}</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+        <button onclick="preScanPhoto()" style="padding: 11px; border-radius: 10px; background: transparent; border: 1.5px solid #A8432E; color: #A8432E; font-size: 12px; font-weight: 500;">Take photo</button>
+        <button onclick="preScanGallery()" style="padding: 11px; border-radius: 10px; background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #1a1a1a; font-size: 12px; font-weight: 500;">Pick from gallery</button>
+      </div>
+    </div>
+
+    <button class="form-save-btn" onclick="preScanPhoto()" style="margin-top: 0;">${c.scanLabel}</button>
+    <div style="text-align: center; margin-top: 14px;">
+      <button onclick="preScanManual()" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+    </div>
+  `;
+}
+
+function preScanSelectType(label) {
+  showToast(`Selected: ${label}`);
+}
+
+function preScanPhoto() {
+  closeFormSheet('preScan');
+  const preset = preScanCategory === 'electronic' ? 'electronic_confident' : 'appliance_confident';
+  setTimeout(() => openOcrFlow({ preset, fromOnboarding: false }), 200);
+}
+
+function preScanGallery() {
+  closeFormSheet('preScan');
+  const preset = preScanCategory === 'electronic' ? 'electronic_confident' : 'appliance_partial';
+  setTimeout(() => openOcrFlow({ preset, fromOnboarding: false }), 200);
+}
+
+function preScanManual() {
+  closeFormSheet('preScan');
+  showToast('Manual add form — coming soon');
+}
+
+/* ============ ADD VEHICLE SHEET ============ */
+function openAddVehicle() {
+  formState = { type: 'addVehicle', selections: {} };
+  document.getElementById('addVehicle-backdrop').classList.add('active');
+  document.getElementById('addVehicle-sheet').classList.add('active');
+  renderAddVehicle();
+}
+function renderAddVehicle() {
+  const body = document.getElementById('addVehicle-form-body');
+  if (!body) return;
+  const vrn = formState.selections.vrn || '';
+  body.innerHTML = `
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+      Just the registration number. We pull everything from Parivahan — owner, insurance, challans, PUC.
+    </div>
+
+    <div class="field-label">RC Number</div>
+    <input type="text" class="text-input dark-border" placeholder="DL 3C AB 1234"
+      value="${vrn}"
+      oninput="formState.selections.vrn = this.value.toUpperCase(); refreshAddVehicleBtn()"
+      style="font-size: 17px; font-weight: 500; letter-spacing: 1.5px; text-align: center; padding: 14px; margin-bottom: 14px;" />
+
+    <button onclick="showToast('Photo RC flow')" style="width: 100%; padding: 12px 14px; background: rgba(168,67,46,0.06); border: 1px dashed rgba(168,67,46,0.3); border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+      <div style="font-size: 14px;">📸</div>
+      <div style="font-size: 12px; color: #A8432E; font-weight: 500; text-align: left;">Can't remember? Photo the RC book</div>
+    </button>
+
+    <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: rgba(0,0,0,0.03); border-radius: 10px; margin-bottom: 18px;">
+      ${iconSvg('shield', 12, '#6b6660')}
+      <div style="font-size: 10px; color: #6b6660;">Verified through Parivahan · Use only your own vehicle</div>
+    </div>
+
+    <button id="addVehicle-save-btn" class="form-save-btn" onclick="saveAddVehicle()">Pull vehicle details →</button>
+  `;
+  refreshAddVehicleBtn();
+}
+function refreshAddVehicleBtn() {
+  const btn = document.getElementById('addVehicle-save-btn');
+  if (!btn) return;
+  const valid = !!formState.selections.vrn && formState.selections.vrn.replace(/\s/g, '').length >= 8;
+  btn.classList.toggle('disabled', !valid);
+}
+function saveAddVehicle() { formState.selections.vrn = formState.selections.vrn || "DL3CAB1234";
+  const vrn = (formState.selections.vrn || '').replace(/\s/g, '').toUpperCase();
+  if (vrn.length < 8) return;
+  closeFormSheet('addVehicle');
+  showToast('🚗 Fetching vehicle details from Parivahan...');
+  setTimeout(() => {
+    // Simulate wow moment by routing to Honda City asset card (demo-wise our stock vehicle)
+    goTo('asset', { assetId: 'honda-city' });
+    showToast(`✓ ${vrn} added to your KKOSH`);
+  }, 1200);
+}
+
+/* ============ ADD PROPERTY SHEET ============ */
+function openAddProperty() {
+  formState = { type: 'addProperty', selections: { docType: null } };
+  document.getElementById('addProperty-backdrop').classList.add('active');
+  document.getElementById('addProperty-sheet').classList.add('active');
+  renderAddProperty();
+}
+function renderAddProperty() {
+  const body = document.getElementById('addProperty-form-body');
+  if (!body) return;
+  const selected = formState.selections.docType;
+
+  body.innerHTML = `
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+      We'll track property tax, society dues, electricity, and help during registration or sale.
+    </div>
+
+    <div class="field-label">Scan one document</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 18px;">
+      <button onclick="formState.selections.docType = 'electricity'; renderAddProperty();" style="padding: 14px 6px; border-radius: 12px; background: ${selected === 'electricity' ? 'rgba(168,67,46,0.08)' : 'rgba(0,0,0,0.03)'}; border: 1.5px solid ${selected === 'electricity' ? '#A8432E' : 'transparent'}; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+        <div style="font-size: 22px;">📄</div>
+        <div style="font-size: 11px; font-weight: 500;">Electricity bill</div>
+        <div style="font-size: 9px; color: ${selected === 'electricity' ? '#A8432E' : '#6b6660'}; font-weight: 500;">Fastest</div>
+      </button>
+      <button onclick="formState.selections.docType = 'sale'; renderAddProperty();" style="padding: 14px 6px; border-radius: 12px; background: ${selected === 'sale' ? 'rgba(168,67,46,0.08)' : 'rgba(0,0,0,0.03)'}; border: 1.5px solid ${selected === 'sale' ? '#A8432E' : 'transparent'}; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+        <div style="font-size: 22px;">📜</div>
+        <div style="font-size: 11px; font-weight: 500;">Sale deed</div>
+        <div style="font-size: 9px; color: ${selected === 'sale' ? '#A8432E' : '#6b6660'};">If you own</div>
+      </button>
+      <button onclick="formState.selections.docType = 'rent'; renderAddProperty();" style="padding: 14px 6px; border-radius: 12px; background: ${selected === 'rent' ? 'rgba(168,67,46,0.08)' : 'rgba(0,0,0,0.03)'}; border: 1.5px solid ${selected === 'rent' ? '#A8432E' : 'transparent'}; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+        <div style="font-size: 22px;">📋</div>
+        <div style="font-size: 11px; font-weight: 500;">Rent agreement</div>
+        <div style="font-size: 9px; color: ${selected === 'rent' ? '#A8432E' : '#6b6660'};">If you rent</div>
+      </button>
+    </div>
+
+    <button id="addProperty-save-btn" class="form-save-btn" onclick="saveAddProperty()">${selected ? 'Scan ' + ({electricity: 'electricity bill', sale: 'sale deed', rent: 'rent agreement'}[selected]) + ' →' : 'Scan electricity bill →'}</button>
+    <div style="text-align: center; margin-top: 14px;">
+      <button onclick="closeFormSheet('addProperty'); showToast('Manual property entry')" style="font-size: 12px; color: #6b6660;">Prefer to type it? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+    </div>
+  `;
+}
+function saveAddProperty() {
+  formState.selections.docType = formState.selections.docType || 'electricity';
+  closeFormSheet('addProperty');
+  const label = {electricity: 'Scanning electricity bill', sale: 'Scanning sale deed', rent: 'Scanning rent agreement'}[formState.selections.docType];
+  showToast(`📄 ${label}...`);
+  setTimeout(() => {
+    goTo('asset', { assetId: 'woodstock' });
+    showToast('✓ Property added to your KKOSH');
+  }, 1200);
+}
+
+/* ============ ADD FAMILY MEMBER SHEET ============ */
+function openAddFamily() {
+  formState = { type: 'addFamily', selections: {} };
+  document.getElementById('addFamily-backdrop').classList.add('active');
+  document.getElementById('addFamily-sheet').classList.add('active');
+  renderAddFamily();
+}
+function renderAddFamily() {
+  const body = document.getElementById('addFamily-form-body');
+  if (!body) return;
+  const rel = formState.selections.relationship || '';
+  const name = formState.selections.name || '';
+  const relationships = ['Spouse', 'Child', 'Parent', 'Sibling'];
+  const chips = relationships.map(r =>
+    `<button class="chip ${rel === r ? 'active' : ''}" onclick="formState.selections.relationship = '${r}'; renderAddFamily()">${r}</button>`
+  ).join('');
+  body.innerHTML = `
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+      Add someone who shares your household. They'll be able to see and manage shared things.
+    </div>
+
+    <div class="field-label">Relationship to you</div>
+    <div class="chip-row" style="margin-bottom: 14px;">${chips}</div>
+    <input type="text" class="text-input" placeholder="Or type a relationship..." value="${rel && !relationships.includes(rel) ? rel : ''}" oninput="formState.selections.relationship = this.value; refreshAddFamilyBtn()" style="margin-bottom: 18px;" />
+
+    <div class="field-label">Name</div>
+    <input type="text" class="text-input" placeholder="e.g. Sunita" oninput="formState.selections.name = this.value; refreshAddFamilyBtn()" style="margin-bottom: 16px;" />
+
+    <div class="field-label">Phone (optional)</div>
+    <input type="tel" class="text-input" placeholder="+91 98765 43210" oninput="formState.selections.phone = this.value" style="margin-bottom: 16px;" />
+    <div style="font-size: 10px; color: #9a958f; margin-bottom: 16px;">If they use KKOSH, they'll see shared family items.</div>
+
+    <button id="addFamily-save-btn" class="form-save-btn" onclick="saveAddFamily()">Add to household</button>
+  `;
+  refreshAddFamilyBtn();
+}
+function refreshAddFamilyBtn() {
+  const btn = document.getElementById('addFamily-save-btn');
+  if (!btn) return;
+  const valid = !!formState.selections.relationship && !!formState.selections.name && formState.selections.name.trim().length > 0;
+  btn.classList.toggle('disabled', !valid);
+}
+function saveAddFamily() { formState.selections.name = formState.selections.name || "Demo Member"; formState.selections.relationship = formState.selections.relationship || "Family";
+  if (!formState.selections.name || !formState.selections.relationship) return;
+  closeFormSheet('addFamily');
+  showToast(`✓ ${formState.selections.name} (${formState.selections.relationship}) added to household`);
+}
+
+/* ============ ADD LOAN SHEET ============ */
+function openAddLoan() {
+  formState = { type: 'addLoan', selections: { source: null } };
+  document.getElementById('addLoan-backdrop').classList.add('active');
+  document.getElementById('addLoan-sheet').classList.add('active');
+  renderAddLoan();
+}
+function renderAddLoan() {
+  const body = document.getElementById('addLoan-form-body');
+  if (!body) return;
+  const source = formState.selections.source;
+
+  if (!source) {
+    // Step 1: Pick source
+    body.innerHTML = `
+      <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+        Track EMIs, remaining balance, and never miss a payment. Two ways to add:
+      </div>
+
+      <button onclick="formState.selections.source = 'bank'; renderAddLoan()" style="width: 100%; padding: 16px 14px; background: white; border-radius: 14px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; text-align: left;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconSvg('shield', 18, '#A8432E')}</div>
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="font-size: 14px; font-weight: 500;">Connect your bank</div>
+            <span style="font-size: 9px; padding: 2px 6px; border-radius: 10px; background: rgba(45,138,78,0.15); color: #1f6638; letter-spacing: 0.4px; font-weight: 500;">FASTEST</span>
+          </div>
+          <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Auto-sync EMIs, principal, interest. Via Account Aggregator · RBI-regulated.</div>
+        </div>
+        ${iconSvg('chevron', 14, '#9a958f')}
+      </button>
+
+      <button onclick="formState.selections.source = 'manual'; renderAddLoan()" style="width: 100%; padding: 16px 14px; background: white; border-radius: 14px; display: flex; align-items: flex-start; gap: 12px; text-align: left;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconSvg('edit', 18, '#1a1a1a')}</div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 500;">Add manually</div>
+          <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Type in amount, EMI, bank name. Good for personal loans or informal arrangements.</div>
+        </div>
+        ${iconSvg('chevron', 14, '#9a958f')}
+      </button>
+    `;
+    return;
+  }
+
+  if (source === 'bank') {
+    body.innerHTML = `
+      <button onclick="formState.selections.source = null; renderAddLoan()" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6660; margin-bottom: 14px;">${iconSvg('back', 14, '#6b6660')} Back</button>
+
+      <div style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">Connect via Account Aggregator</div>
+      <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+        One-time consent. We see only your loan accounts — nothing else. RBI-regulated framework.
+      </div>
+
+      <div style="background: white; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">PICK YOUR BANK</div>
+        ${['HDFC Bank', 'ICICI Bank', 'Axis Bank', 'SBI', 'Kotak'].map(b =>
+          `<button onclick="showToast('Opening ${b} consent...'); setTimeout(() => { closeFormSheet('addLoan'); showToast('✓ Loans synced from ${b}'); }, 1500);" style="width: 100%; padding: 12px 4px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid rgba(0,0,0,0.06); font-size: 13px; font-weight: 500;">
+            <span>${b}</span>
+            ${iconSvg('chevron', 14, '#9a958f')}
+          </button>`
+        ).join('')}
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
+        ${iconSvg('shield', 12, '#6b6660')}
+        <div style="font-size: 10px; color: #6b6660;">Your data never leaves India · Setu AA-TSP</div>
+      </div>
+    `;
+    return;
+  }
+
+  // manual
+  body.innerHTML = `
+    <button onclick="formState.selections.source = null; renderAddLoan()" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6660; margin-bottom: 14px;">${iconSvg('back', 14, '#6b6660')} Back</button>
+
+    <div class="field-label">What type of loan?</div>
+    <div class="chip-row" style="margin-bottom: 14px;">
+      ${['Home loan', 'Car loan', 'Personal', 'Education', 'Other'].map(l =>
+        `<button class="chip ${formState.selections.loanType === l ? 'active' : ''}" onclick="formState.selections.loanType = '${l}'; renderAddLoan()">${l}</button>`
+      ).join('')}
+    </div>
+
+    <div class="field-label">Lender</div>
+    <input type="text" class="text-input" placeholder="e.g. HDFC Bank" oninput="formState.selections.lender = this.value; refreshAddLoanBtn()" style="margin-bottom: 14px;" />
+
+    <div class="two-col" style="margin-bottom: 14px;">
+      <div>
+        <div class="field-label">Monthly EMI</div>
+        <input type="number" class="text-input" placeholder="₹" oninput="formState.selections.emi = this.value; refreshAddLoanBtn()" />
+      </div>
+      <div>
+        <div class="field-label">EMIs left</div>
+        <input type="number" class="text-input" placeholder="0" oninput="formState.selections.emisLeft = this.value" />
+      </div>
+    </div>
+
+    <div class="field-label">Note (optional)</div>
+    <input type="text" class="text-input" placeholder="e.g. Linked to Honda City" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
+
+    <button id="addLoan-save-btn" class="form-save-btn" onclick="saveAddLoanManual()">Save Loan</button>
+  `;
+  refreshAddLoanBtn();
+}
+function refreshAddLoanBtn() {
+  const btn = document.getElementById('addLoan-save-btn');
+  if (!btn) return;
+  const valid = !!formState.selections.loanType && !!formState.selections.lender && formState.selections.lender.trim().length > 0 && !!formState.selections.emi;
+  btn.classList.toggle('disabled', !valid);
+}
+function saveAddLoanManual() { formState.selections.lender = formState.selections.lender || "Demo Bank"; formState.selections.loanType = formState.selections.loanType || "Personal";
+  if (!formState.selections.lender) return;
+  closeFormSheet('addLoan');
+  showToast(`✓ ${formState.selections.loanType} from ${formState.selections.lender} saved`);
+}
+
+/* ============ ARCHIVE ASSET SHEET ============ */
+function openArchiveSheet(assetId) {
+  const t = getThingById(assetId);
+  if (!t) return;
+  formState = { type: 'archive', assetId, selections: {} };
+  document.getElementById('archive-backdrop').classList.add('active');
+  document.getElementById('archive-sheet').classList.add('active');
+  renderArchiveSheet();
+}
+function renderArchiveSheet() {
+  const body = document.getElementById('archive-form-body');
+  if (!body) return;
+  const t = getThingById(formState.assetId);
+  if (!t) return;
+  const reason = formState.selections.reason;
+
+  const reasons = [
+    { key: 'sold', label: 'Sold', icon: '💰', desc: 'I sold or transferred ownership' },
+    { key: 'gifted', label: 'Gifted', icon: '🎁', desc: 'I gave it to someone' },
+    { key: 'disposed', label: 'Disposed', icon: '🗑️', desc: 'Discarded, scrapped, or recycled' },
+    { key: 'stolen', label: 'Stolen / Lost', icon: '⚠️', desc: 'Reported to authorities' },
+    { key: 'moving-out', label: 'Moving out', icon: '🚚', desc: 'Ending rental · keeping records' }
+  ];
+
+  // Hide moving-out unless this is a rental
+  const visibleReasons = reasons.filter(r => r.key !== 'moving-out' || (t.category === 'property' && t.mode === 'you-rent'));
+
+  body.innerHTML = `
+    <div style="background: rgba(0,0,0,0.03); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center;">${iconSvg(t.icon, 18, '#1a1a1a')}</div>
+      <div style="flex: 1;">
+        <div style="font-size: 13px; font-weight: 500;">${t.name}</div>
+        <div style="font-size: 10px; color: #6b6660; margin-top: 1px;">${t.sub}</div>
+      </div>
+    </div>
+
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
+      Archived assets leave your active list but stay searchable. Insurance claims, tax records, and service history remain accessible.
+    </div>
+
+    <div class="field-label">Why are you archiving?</div>
+    <div style="margin-bottom: 16px;">
+      ${visibleReasons.map(r => `
+        <button onclick="formState.selections.reason = '${r.key}'; renderArchiveSheet()" style="width: 100%; padding: 12px 14px; background: ${reason === r.key ? '#1a1a1a' : 'white'}; color: ${reason === r.key ? 'white' : '#1a1a1a'}; border-radius: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-align: left; border: 1.5px solid ${reason === r.key ? '#1a1a1a' : 'transparent'};">
+          <div style="font-size: 18px;">${r.icon}</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500;">${r.label}</div>
+            <div style="font-size: 10px; color: ${reason === r.key ? 'rgba(255,255,255,0.6)' : '#6b6660'}; margin-top: 2px;">${r.desc}</div>
+          </div>
+        </button>
+      `).join('')}
+    </div>
+
+    ${reason ? `
+      <div class="field-label">Add a note (optional)</div>
+      <input type="text" class="text-input" placeholder="e.g. Sold to neighbour · ₹3.5L" oninput="formState.selections.note = this.value" style="margin-bottom: 16px;" />
+    ` : ''}
+
+    <button class="form-save-btn" onclick="confirmArchive()">${reason ? `Archive ${t.name}` : `Archive ${t.name}`}</button>
+  `;
+}
+function confirmArchive() { formState.selections.reason = formState.selections.reason || "sold";
+  if (!formState.selections.reason) return;
+  const t = getThingById(formState.assetId);
+  closeFormSheet('archive');
+  showToast(`${t.name} archived · still searchable`);
+  setTimeout(() => goTo('things'), 800);
 }
 
 /* ============ ASSET CONFIG (per-asset data) ============ */
@@ -3124,6 +3705,347 @@ function getAssetConfig(t) {
     };
   }
 
+  if (t.id === 'enfield') {
+    return { ...base,
+      brandLogo: 'enfield',
+      topReminder: { title: 'First service', chip: 'in 14d' },
+      protectionSync: { source: 'Parivahan', time: '2h ago' },
+      protection: [
+        { label: 'Insurance', detail: 'ICICI Lombard · expires Aug 2026', state: 'active', history: [
+          { label: 'ICICI Lombard · Aug 2025 – Aug 2026', sub: 'Comprehensive · NCB 20%', amount: 8400, status: 'Paid' },
+          { label: 'ICICI Lombard · Aug 2024 – Aug 2025', sub: 'Comprehensive · first year', amount: 11200, status: 'Paid' }
+        ]},
+        { label: 'PUC Certificate', detail: 'Valid until Nov 2026', state: 'active' },
+        { label: 'RC Book', detail: 'DigiLocker verified', state: 'active' },
+        { label: 'Road Tax', detail: 'Valid lifetime', state: 'active' },
+        { label: 'FASTag', detail: 'Not applicable for 2W', state: 'draft', stateLabel: 'N/A' },
+        { label: 'Extended warranty', detail: 'Royal Enfield · expires Aug 2027', state: 'active' }
+      ],
+      components: [
+        { label: 'Tyres', detail: 'MRF Nylogrip · Feb 2025' },
+        { label: 'Battery', detail: 'Exide Riders · stock' },
+        { label: 'Engine oil', detail: 'Castrol Power1 · last change Jan 2026' }
+      ],
+      docs: [
+        { label: 'Insurance', uploaded: true }, { label: 'RC', uploaded: true },
+        { label: 'PUC', uploaded: true }, { label: 'Invoice', uploaded: true }
+      ],
+      details: [
+        { label: 'Make & model', value: 'Royal Enfield Classic 350' },
+        { label: 'Colour', value: 'Chrome Black' },
+        { label: 'Registered to', value: 'Rajinder Sharma' },
+        { label: 'Year', value: '2022' },
+        { label: 'Engine no.', value: 'UC3S***5621' }
+      ],
+      detailsLabel: 'VEHICLE DETAILS',
+      service: [
+        { title: '5000 km service', detail: '14 Jan 2026 · Royal Enfield Sec 14', amount: 1800 },
+        { title: 'Chain lubrication', detail: '28 Sep 2025 · Royal Enfield Sec 14', amount: 400 }
+      ],
+      reminders: [
+        { title: 'First service', detail: '10,000 km · pre-booked slot', chip: 'in 14d' },
+        { title: 'Chain check', detail: 'Every 1000 km', chip: 'in 3wk' }
+      ],
+      partners: [
+        { name: 'Royal Enfield Sec 14', role: 'Authorised dealer · Gurugram', trusted: true }
+      ],
+      support: [
+        { label: 'Royal Enfield Care', detail: '1800-210-0007', brandLogo: 'enfield' }
+      ],
+      networkChips: ['Best modifications?', 'Tour routes?', '+ Custom'],
+      networkCount: 14, alsoOwn: 4
+    };
+  }
+
+  if (t.id === 'boat-airdopes') {
+    return { ...base,
+      brandLogo: 'boat',
+      protection: [
+        { label: 'Warranty', detail: 'boAt · 12 months from purchase', state: 'active', history: [
+          { label: 'Purchase warranty', sub: 'Valid until Apr 2027', amount: 0, status: 'Active' }
+        ]}
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Box', uploaded: false }, { label: 'Manual', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'boAt Airdopes 141' },
+        { label: 'Colour', value: 'Active Black' },
+        { label: 'Serial no.', value: 'BA141***9823' },
+        { label: 'Bought', value: 'Apr 2026 · ₹1,299' }
+      ],
+      detailsLabel: 'DEVICE DETAILS',
+      serviceEmpty: true,
+      partnersEmpty: true,
+      support: [
+        { label: 'boAt Support', detail: '1800-572-3100', brandLogo: 'boat' }
+      ],
+      networkChips: ['Battery life tips?', 'Best settings?', '+ Custom'],
+      networkCount: 22, alsoOwn: 9
+    };
+  }
+
+  if (t.id === 'sony-a7') {
+    return { ...base,
+      brandLogo: 'sony',
+      protection: [
+        { label: 'Sony Warranty', detail: 'Active until Mar 2027', state: 'active' },
+        { label: 'Extended warranty', detail: 'Not purchased', state: 'draft', stateLabel: 'EXPLORE', innerCta: 'Explore extended warranty' },
+        { label: 'Gadget insurance', detail: 'HDFC ERGO · active', state: 'active', history: [
+          { label: 'HDFC ERGO · Jan 2026 – Jan 2027', sub: 'Theft + accidental damage', amount: 3200, status: 'Paid' },
+          { label: 'HDFC ERGO · Jan 2025 – Jan 2026', sub: 'Theft + accidental damage', amount: 2800, status: 'Paid' }
+        ]}
+      ],
+      components: [
+        { label: 'Body', detail: 'Sony A7 IV · Serial A7IV***4521' },
+        { label: 'Lens · Sony FE 24-70mm', detail: 'f/2.8 GM · bought Mar 2024' },
+        { label: 'Battery · NP-FZ100', detail: '2 packs · original' },
+        { label: 'Memory · Sony Tough', detail: '128GB CFexpress Type A' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Insurance', uploaded: true }, { label: 'Manual', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'Sony Alpha 7 IV · ILCE-7M4' },
+        { label: 'Sensor', value: 'Full-frame · 33MP' },
+        { label: 'Serial', value: 'A7IV***4521' },
+        { label: 'Location', value: 'Woodstock · Study' },
+        { label: 'Bought', value: 'Mar 2024 · ₹2,42,990' }
+      ],
+      detailsLabel: 'DEVICE DETAILS',
+      service: [
+        { title: 'Sensor cleaning', detail: '12 Nov 2025 · Sony Service BKC', amount: 1500 }
+      ],
+      reminders: [
+        { title: 'Sensor cleaning', detail: 'Every 12 months', chip: 'in 7mo' },
+        { title: 'Firmware update', detail: 'Check Sony site', chip: 'in 3mo' }
+      ],
+      partners: [
+        { name: 'Sony Service BKC', role: 'Authorised service centre', trusted: true }
+      ],
+      support: [
+        { label: 'Sony Support India', detail: '1800-103-7799', brandLogo: 'sony' }
+      ],
+      networkChips: ['Best lenses for A7?', 'Video settings?', '+ Custom'],
+      networkCount: 7, alsoOwn: 2
+    };
+  }
+
+  if (t.id === 'samsung-tv') {
+    return { ...base,
+      brandLogo: 'samsung',
+      protection: [
+        { label: 'Samsung Warranty', detail: 'Panel · expires Aug 2027', state: 'active' },
+        { label: 'Extended warranty', detail: 'Samsung Care+ · expires Aug 2026', state: 'active', history: [
+          { label: 'Samsung Care+ · 2024-2026', sub: 'Panel + burn-in · 2 years', amount: 4999, status: 'Paid' }
+        ]},
+        { label: 'Installation warranty', detail: 'Wall mount · expires Aug 2025', state: 'expired' }
+      ],
+      components: [
+        { label: 'Remote · SolarCell', detail: 'Samsung Smart remote' },
+        { label: 'Wall mount', detail: 'Samsung WMN-M22EB/XL · installed Aug 2022' },
+        { label: 'Soundbar · HW-Q800C', detail: 'Connected via HDMI eARC' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Install', uploaded: true }, { label: 'Manual', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'Samsung QN55Q80C · 55" QLED' },
+        { label: 'Resolution', value: '4K UHD · 120Hz' },
+        { label: 'Location', value: 'Woodstock · Living Room' },
+        { label: 'Serial', value: 'SAMS***7721' },
+        { label: 'Bought', value: 'Aug 2022 · ₹1,24,900' }
+      ],
+      detailsLabel: 'DEVICE DETAILS',
+      service: [
+        { title: 'Firmware update · install', detail: '4 Jan 2026 · Auto', amount: 0 },
+        { title: 'Wall mount check', detail: '18 Aug 2024 · Samsung Care', amount: 500 }
+      ],
+      reminders: [
+        { title: 'Firmware update check', detail: 'Quarterly', chip: 'in 2mo' }
+      ],
+      partners: [
+        { name: 'Samsung Care', role: 'Authorised service', trusted: true }
+      ],
+      support: [
+        { label: 'Samsung Support India', detail: '1800-5-7267864', brandLogo: 'samsung' }
+      ],
+      networkChips: ['Best picture settings?', 'Gaming mode tips?', '+ Custom'],
+      networkCount: 10, alsoOwn: 4
+    };
+  }
+
+  if (t.id === 'samsung-fridge') {
+    return { ...base,
+      brandLogo: 'samsung',
+      protection: [
+        { label: 'Compressor warranty', detail: 'Samsung · expires Jul 2031', state: 'active' },
+        { label: 'Samsung Warranty', detail: 'Parts · expired Jul 2023', state: 'expired', history: [
+          { label: 'Original warranty · 2021-2023', sub: 'Samsung · 2 years', amount: 0, status: 'Active then' }
+        ]},
+        { label: 'AMC', detail: 'Not purchased', state: 'draft', stateLabel: 'EXPLORE', innerCta: 'Explore AMC plans' }
+      ],
+      components: [
+        { label: 'Water filter', detail: 'Samsung HAF-CIN · last changed Oct 2025' },
+        { label: 'Ice maker', detail: 'Working · internal' },
+        { label: 'Door seals', detail: 'Original · cleaned Jan 2026' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Install', uploaded: true }, { label: 'AMC', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'Samsung RF28T5A01B1 · French Door' },
+        { label: 'Capacity', value: '670 L · 4-star' },
+        { label: 'Location', value: 'Woodstock · Kitchen' },
+        { label: 'Installed', value: 'Jul 2021' },
+        { label: 'Rated power', value: '255 W' }
+      ],
+      detailsLabel: 'APPLIANCE DETAILS',
+      service: [
+        { title: 'Water filter replacement', detail: '14 Oct 2025 · Samsung Care', amount: 2400 },
+        { title: 'Door seal cleaning', detail: '8 Jan 2026 · Self', amount: 0 }
+      ],
+      reminders: [
+        { title: 'Water filter change', detail: 'Every 6 months', chip: 'in 5mo' },
+        { title: 'Coil cleaning', detail: 'Annual', chip: 'in 4mo' }
+      ],
+      partners: [
+        { name: 'Samsung Care', role: 'Authorised service', trusted: true }
+      ],
+      support: [
+        { label: 'Samsung Support India', detail: '1800-5-7267864', brandLogo: 'samsung' }
+      ],
+      networkChips: ['AMC worth it?', 'Best filter source?', '+ Custom'],
+      networkCount: 8, alsoOwn: 3
+    };
+  }
+
+  if (t.id === 'yamaha-guitar') {
+    return { ...base,
+      brandLogo: 'yamaha',
+      components: [
+        { label: "Strings · D'Addario EJ16", detail: 'Last changed Nov 2025' },
+        { label: 'Case · Yamaha GC-20', detail: 'Hard case · bought with guitar' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Certificate', uploaded: false }, { label: 'Manual', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: "Yamaha F310 · Dreadnought" },
+        { label: 'Type', value: 'Acoustic · 6-string' },
+        { label: 'Top', value: 'Spruce · Natural finish' },
+        { label: 'Owner', value: "Arjun's (in Khushwant's KKOSH)" },
+        { label: 'Bought', value: '2021 · ₹8,990' }
+      ],
+      detailsLabel: 'DETAILS',
+      service: [
+        { title: 'Strings replacement', detail: '12 Nov 2025 · Furtados', amount: 900 },
+        { title: 'Fretboard clean', detail: '8 Aug 2025 · Self', amount: 0 }
+      ],
+      reminders: [
+        { title: 'Strings change', detail: 'Every 3-4 months', chip: 'in 2mo' },
+        { title: 'Humidity check', detail: 'Winter care', chip: 'in 6mo' }
+      ],
+      partners: [
+        { name: 'Furtados Gurugram', role: 'Music store · strings & service', trusted: true }
+      ],
+      support: [
+        { label: 'Yamaha Music India', detail: '1800-4198-ARTS', brandLogo: 'yamaha' }
+      ],
+      networkChips: ['String recommendations?', 'Humidity tips?', '+ Custom'],
+      networkCount: 5, alsoOwn: 2
+    };
+  }
+
+  if (t.id === 'titan-watch') {
+    return { ...base,
+      brandLogo: 'titan',
+      protection: [
+        { label: 'Titan Warranty', detail: 'Expired Oct 2021', state: 'expired' },
+        { label: 'Insurance', detail: 'Not covered', state: 'draft', stateLabel: 'EXPLORE', innerCta: 'Add to valuables policy' }
+      ],
+      components: [
+        { label: 'Strap · Gold plated', detail: 'Original · polished Dec 2024' },
+        { label: 'Battery · CR2016', detail: 'Last replaced Jun 2025' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Certificate', uploaded: false }, { label: 'Appraisal', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'Titan Raga · NR2556YM01' },
+        { label: 'Case', value: 'Gold plated · 32mm' },
+        { label: 'Acquired', value: '2019 · Gift from Rajinder' },
+        { label: 'Est. value', value: '₹8,500' }
+      ],
+      detailsLabel: 'DETAILS',
+      service: [
+        { title: 'Battery replacement', detail: '14 Jun 2025 · Titan World', amount: 250 },
+        { title: 'Strap polish', detail: '20 Dec 2024 · Titan World', amount: 300 }
+      ],
+      reminders: [
+        { title: 'Battery check', detail: 'Every 2 years', chip: 'in 14mo' }
+      ],
+      partners: [
+        { name: 'Titan World DLF', role: 'Authorised service', trusted: true }
+      ],
+      support: [
+        { label: 'Titan Support', detail: '1800-266-0123', brandLogo: 'titan' }
+      ],
+      networkChips: ['Appraisal advice?', 'Care tips?', '+ Custom'],
+      networkCount: 4, alsoOwn: 1
+    };
+  }
+
+  if (t.id === 'firefox') {
+    return { ...base,
+      brandLogo: 'firefox',
+      topReminder: { title: 'Service due', chip: 'in 5d' },
+      protection: [
+        { label: 'Firefox Warranty', detail: 'Frame · 2 years · expires Jun 2025', state: 'expired' },
+        { label: 'Extended warranty', detail: 'Not purchased', state: 'draft', stateLabel: 'EXPLORE' }
+      ],
+      components: [
+        { label: 'Tyres', detail: 'Kenda 26×1.95 · original · worn' },
+        { label: 'Brake pads', detail: 'Tektro V-brake · last changed Sep 2024' },
+        { label: 'Chain', detail: 'Shimano · last lubed Feb 2026' }
+      ],
+      docs: [
+        { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
+        { label: 'Manual', uploaded: false }, { label: 'Assembly', uploaded: false }
+      ],
+      details: [
+        { label: 'Model', value: 'Firefox Roadrunner 26T' },
+        { label: 'Type', value: 'Mountain bike · 21 speed' },
+        { label: 'Frame', value: 'Steel · 19"' },
+        { label: 'Owner', value: "Arjun's (in Khushwant's KKOSH)" },
+        { label: 'Bought', value: '2023 · ₹13,500' }
+      ],
+      detailsLabel: 'DETAILS',
+      service: [
+        { title: 'Chain lubrication', detail: '18 Feb 2026 · Self', amount: 0 },
+        { title: 'Brake pad replacement', detail: '14 Sep 2024 · Cyclofit', amount: 800 }
+      ],
+      reminders: [
+        { title: 'Service · brakes + gears', detail: 'Overdue', chip: 'in 5d' },
+        { title: 'Tyre check', detail: 'Pressure + wear', chip: 'in 3wk' }
+      ],
+      partners: [
+        { name: 'Cyclofit Gurugram', role: 'Bike service · Sec 14', trusted: true }
+      ],
+      support: [
+        { label: 'Firefox Bikes', detail: '1800-258-0007', brandLogo: 'firefox' }
+      ],
+      networkChips: ['Best trails?', 'Upgrade advice?', '+ Custom'],
+      networkCount: 6, alsoOwn: 2
+    };
+  }
+
   // Default fallback
   return { ...base,
     protection: [{ label: 'Warranty', detail: 'Check status', state: 'draft' }],
@@ -3232,7 +4154,7 @@ function renderMemberProfile(memberId) {
       ${moneyHtml}
       ${docsHtml}
       <div style="padding: 24px 16px 0;">
-        <button class="primary-cta" onclick="showToast('Ask about ${m.short}')">${iconSvg('sparkle', 14, 'white')} Ask about ${m.short}</button>
+        <button class="primary-cta" onclick="openAiAskMember('${m.id}')">${iconSvg('sparkle', 14, 'white')} Ask about ${m.short}</button>
       </div>
       <div style="height: 20px;"></div>
     </div>
@@ -3677,14 +4599,14 @@ function renderObAppliance() {
             </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
-            <button onclick="goTo('ob-family')" style="padding: 11px; border-radius: 10px; background: transparent; border: 1.5px solid #A8432E; color: #A8432E; font-size: 12px; font-weight: 500;">Take photo</button>
-            <button onclick="goTo('ob-family')" style="padding: 11px; border-radius: 10px; background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #1a1a1a; font-size: 12px; font-weight: 500;">Pick from gallery</button>
+            <button onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="padding: 11px; border-radius: 10px; background: transparent; border: 1.5px solid #A8432E; color: #A8432E; font-size: 12px; font-weight: 500;">Take photo</button>
+            <button onclick="openOcrFlow({ preset: 'appliance_partial', fromOnboarding: true })" style="padding: 11px; border-radius: 10px; background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #1a1a1a; font-size: 12px; font-weight: 500;">Pick from gallery</button>
           </div>
         </div>
       </div>
 
       <div style="padding: 22px 24px 0;">
-        <button class="form-save-btn" onclick="goTo('ob-family')" style="margin-top: 0;">Scan invoice →</button>
+        <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="margin-top: 0;">Scan invoice →</button>
         <div style="text-align: center; margin-top: 14px;">
           <button onclick="goTo('ob-family')" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
         </div>
@@ -3827,6 +4749,311 @@ function onboardingComplete() {
   setTimeout(() => goTo('home'), 800);
 }
 
+/* ============ OCR FLOW (Invoice scan → Review → Save) ============ */
+
+// Central state for OCR flow
+let ocrState = {
+  assetType: 'appliance',   // appliance | electronic | other
+  fromOnboarding: false,    // true if we should return to ob-family after save
+  variant: 'confident',     // confident | partial
+  filename: 'croma_invoice_0423.jpg',
+  room: 'Living room',      // selected room
+  identification: { Brand: 'Voltas', Model: '185V Vectra Plus', 'Capacity · Rating': '1.5 ton · 5-star' },
+  purchase: { Date: '22 Oct 2024', Price: '₹42,990', Dealer: 'Croma · Cyber Hub' },
+  unclear: [],              // array of field keys that are UNCLEAR
+  brandLogoKey: 'voltas',
+  savedName: 'Voltas Split AC',
+  savedSpec: '1.5 ton · 5-star'
+};
+
+// Presets for different OCR contexts
+const ocrPresets = {
+  appliance_confident: {
+    assetType: 'appliance', variant: 'confident',
+    filename: 'croma_invoice_0423.jpg',
+    identification: { Brand: 'Voltas', Model: '185V Vectra Plus', 'Capacity · Rating': '1.5 ton · 5-star' },
+    purchase: { Date: '22 Oct 2024', Price: '₹42,990', Dealer: 'Croma · Cyber Hub' },
+    unclear: [], room: 'Living room',
+    brandLogoKey: 'voltas', savedName: 'Voltas Split AC', savedSpec: '1.5 ton · 5-star',
+    confirmItems: [
+      'Warranty tracking · expires Oct 2025',
+      'Compressor warranty · 10 yrs',
+      'Invoice saved to Documents',
+      'Filter cleaning reminder · in 30 days'
+    ]
+  },
+  appliance_partial: {
+    assetType: 'appliance', variant: 'partial',
+    filename: 'invoice_samsung.jpg',
+    identification: { Brand: 'Samsung', Model: null, Capacity: null },
+    purchase: { Date: '15 Mar 2025', Price: '₹38,500', Dealer: null },
+    unclear: ['Model', 'Capacity', 'Dealer'], room: null,
+    brandLogoKey: 'samsung', savedName: 'Samsung Appliance', savedSpec: '1.5 ton',
+    confirmItems: [
+      'Warranty tracking · expires Mar 2026',
+      'Invoice saved to Documents',
+      'Service reminder · in 60 days'
+    ]
+  },
+  electronic_confident: {
+    assetType: 'electronic', variant: 'confident',
+    filename: 'apple_invoice_1124.jpg',
+    identification: { Brand: 'Apple', Model: 'iPhone 14 · 128GB', 'Colour · Storage': 'Midnight · 128GB' },
+    purchase: { Date: '12 Nov 2024', Price: '₹69,900', Dealer: 'Apple BKC' },
+    unclear: [], room: 'Personal use',
+    brandLogoKey: 'apple_simple', savedName: 'iPhone 14', savedSpec: '128GB · Midnight',
+    confirmItems: [
+      'Warranty tracking · expires Nov 2025',
+      'IMEI verified',
+      'Invoice saved to Documents',
+      'AppleCare+ reminder · in 55 days'
+    ]
+  }
+};
+
+function openOcrFlow(options) {
+  const preset = options.preset || 'appliance_confident';
+  const baseState = ocrPresets[preset] || ocrPresets.appliance_confident;
+  ocrState = { ...baseState, fromOnboarding: !!options.fromOnboarding };
+  goTo('ocr-review');
+}
+
+function renderOcrReview() {
+  const scr = document.getElementById('screen-ocr-review');
+  if (!scr) return;
+  const isConfident = ocrState.variant === 'confident';
+  const unclearCount = ocrState.unclear.length;
+
+  // Top meta + status
+  const stepLabel = isConfident
+    ? `1 · <span style="background: #FFF3A0; padding: 0 4px; border-radius: 2px;">OCR</span> REVIEW · Confident`
+    : `2 · <span style="background: #FFF3A0; padding: 0 4px; border-radius: 2px;">OCR</span> REVIEW · Partial`;
+
+  const statusStrip = isConfident
+    ? `<div style="text-align: center; font-size: 13px; color: #1f6638; font-weight: 500; margin-top: 4px;">
+         <span style="color: #1f6638;">✓</span> Read successfully
+       </div>`
+    : `<div style="text-align: center; font-size: 13px; color: #8a5d09; font-weight: 500; margin-top: 4px;">
+         <span style="color: #8a5d09;">⚠</span> Some fields unclear
+       </div>`;
+
+  // File card
+  const fileCard = `
+    <div style="margin: 16px 16px 0; background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 44px; height: 52px; border-radius: 6px; background: #EBE4D8; display: flex; flex-direction: column; justify-content: flex-start; padding: 6px 4px; gap: 2px; flex-shrink: 0;">
+        <div style="height: 2px; background: rgba(0,0,0,0.15); border-radius: 1px; width: 70%;"></div>
+        <div style="height: 2px; background: rgba(0,0,0,0.15); border-radius: 1px; width: 85%;"></div>
+        <div style="height: 2px; background: rgba(0,0,0,0.15); border-radius: 1px; width: 60%;"></div>
+        <div style="height: 2px; background: rgba(0,0,0,0.15); border-radius: 1px; width: 75%;"></div>
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 11px; color: #6b6660;">${isConfident ? 'Invoice scanned' : 'Invoice was a bit blurry'}</div>
+        <div style="font-size: 14px; font-weight: 500; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ocrState.filename}</div>
+        <div style="font-size: 12px; margin-top: 4px;">
+          <a style="color: #A8432E; font-weight: 500; cursor: pointer;" onclick="showToast('View full image')">View full image →</a>
+          ${!isConfident ? ` · <a style="color: #A8432E; font-weight: 500; cursor: pointer;" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: ocrState.fromOnboarding })">Rescan</a>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Headline
+  const headline = isConfident
+    ? `<div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.2;">We found your ${ocrState.assetType === 'electronic' ? 'device' : 'AC'}.</div>
+       <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">Review and fix anything wrong. Tap any field to edit.</div>`
+    : `<div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.2;">We got most of it.</div>
+       <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">${unclearCount} field${unclearCount === 1 ? '' : 's'} need${unclearCount === 1 ? 's' : ''} your help. Tap any to fill.</div>`;
+
+  // Field renderer — each field either has value (green ✓) or is UNCLEAR (amber pill + Tap to add)
+  const renderField = (label, value, isUnclear) => {
+    if (isUnclear) {
+      return `
+        <div style="padding: 14px 16px; border-top: 0.5px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="font-size: 13px; color: #1a1a1a;">${label}</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(200,135,13,0.15); color: #8a5d09; font-weight: 500; letter-spacing: 0.5px;">UNCLEAR</span>
+            <button onclick="showToast('Edit ${label}')" style="font-size: 12px; color: #A8432E; font-weight: 500;">Tap to add →</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div style="padding: 14px 16px; border-top: 0.5px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <div style="font-size: 13px; color: #1a1a1a;">${label}</div>
+        <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="showToast('Edit ${label}')">
+          <span style="color: #1f6638; font-size: 13px;">✓</span>
+          <span style="font-size: 13px; font-weight: 500;">${value}</span>
+        </div>
+      </div>
+    `;
+  };
+
+  // Group: Identification
+  const idFieldsHtml = Object.keys(ocrState.identification).map(k =>
+    renderField(k, ocrState.identification[k], ocrState.unclear.includes(k))
+  ).join('');
+  // Group: Purchase
+  const purchaseFieldsHtml = Object.keys(ocrState.purchase).map(k =>
+    renderField(k, ocrState.purchase[k], ocrState.unclear.includes(k))
+  ).join('');
+
+  const groupCard = (label, inner) => `
+    <div style="margin: 14px 16px 0; background: white; border-radius: 14px; overflow: hidden;">
+      <div style="padding: 14px 16px 10px; font-size: 11px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500;">${label}</div>
+      ${inner}
+    </div>
+  `;
+
+  // Room section (only for Confident & when asset needs room)
+  const roomChips = ['Living room', 'Master bedroom', "Kids' room", 'Guest room'];
+  const roomHtml = isConfident && ocrState.assetType === 'appliance' ? `
+    <div style="margin: 14px 16px 0; background: white; border-radius: 14px; padding: 14px 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="font-size: 11px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500;">ROOM</div>
+        <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(200,135,13,0.15); color: #8a5d09; font-weight: 500; letter-spacing: 0.5px;">NEEDED</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        ${roomChips.map(r => {
+          const active = ocrState.room === r;
+          return `<button onclick="ocrState.room='${r.replace(/'/g, "\\'")}'; renderOcrReview()" style="padding: 7px 13px; border-radius: 16px; background: ${active ? '#A8432E' : 'rgba(0,0,0,0.05)'}; color: ${active ? 'white' : '#1a1a1a'}; font-size: 12px; font-weight: 500;">${r}</button>`;
+        }).join('')}
+        <button onclick="showToast('Add custom room')" style="padding: 7px 13px; border-radius: 16px; background: transparent; color: #A8432E; font-size: 12px; font-weight: 500; border: 1px dashed rgba(168,67,46,0.3);">+ Other</button>
+      </div>
+    </div>
+  ` : '';
+
+  // Partial-only: rescan nudge
+  const rescanNudge = !isConfident ? `
+    <div style="margin: 14px 16px 0; padding: 14px; background: rgba(200,135,13,0.08); border-radius: 12px; display: flex; gap: 10px; align-items: flex-start;">
+      <div style="color: #C8870D; font-size: 16px; line-height: 1;">⚠</div>
+      <div style="flex: 1;">
+        <div style="font-size: 13px; font-weight: 500; color: #8a5d09;">Rescan for better results?</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Brighter light and flat surface usually help.</div>
+      </div>
+      <button onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: ocrState.fromOnboarding })" style="padding: 7px 16px; border-radius: 18px; background: transparent; border: 1px solid rgba(200,135,13,0.4); color: #8a5d09; font-size: 11px; font-weight: 500;">Rescan</button>
+    </div>
+  ` : '';
+
+  // CTA
+  const ctaLabel = isConfident ? 'Confirm & save →' : 'Fill missing & save →';
+  const cta = `
+    <div style="padding: 22px 16px 0;">
+      <button class="primary-cta" onclick="goTo('ocr-confirm')">${ctaLabel}</button>
+      ${!isConfident ? `<div style="text-align: center; margin-top: 14px;"><button onclick="goTo('ocr-confirm')" style="font-size: 12px; color: #A8432E; font-weight: 500;">Save what I have, finish later</button></div>` : ''}
+    </div>
+  `;
+
+  // Footer (confident only)
+  const footer = isConfident ? `
+    <div style="padding: 18px 24px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <button onclick="showToast('Scan a different invoice')" style="font-size: 11px; color: #6b6660;">Scan a different invoice</button>
+      <div style="font-size: 11px; color: #c2bdb5;">·</div>
+      <button onclick="handleOcrCancel()" style="font-size: 11px; color: #6b6660;">Cancel</button>
+    </div>
+  ` : '';
+
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    <div style="padding: 14px 16px 0; position: relative;">
+      <div style="text-align: center; font-size: 10px; letter-spacing: 0.8px; color: #9a958f; font-weight: 500;">${stepLabel}</div>
+    </div>
+    <div style="padding: 10px 16px 0; display: flex; align-items: center; justify-content: space-between;">
+      <button class="back-btn" onclick="handleOcrCancel()">${iconSvg('back', 18, '#1a1a1a')}</button>
+      <div style="flex: 1;">${statusStrip}</div>
+      <div style="width: 34px;"></div>
+    </div>
+    <div class="screen-scroll" style="padding-bottom: 20px;">
+      ${fileCard}
+      <div style="padding: 22px 20px 0;">${headline}</div>
+      ${groupCard('IDENTIFICATION', idFieldsHtml)}
+      ${groupCard('PURCHASE', purchaseFieldsHtml)}
+      ${roomHtml}
+      ${rescanNudge}
+      ${cta}
+      ${footer}
+      <div style="height: 20px;"></div>
+    </div>
+  `;
+}
+
+function handleOcrCancel() {
+  if (ocrState.fromOnboarding) goTo('ob-appliance');
+  else goTo('home');
+}
+
+function renderOcrConfirm() {
+  const scr = document.getElementById('screen-ocr-confirm');
+  if (!scr) return;
+
+  const preset = ocrPresets[`${ocrState.assetType}_${ocrState.variant}`] || ocrPresets.appliance_confident;
+  const items = preset.confirmItems || [];
+
+  const itemsHtml = items.map(i => `
+    <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;">
+      <span style="color: #1f6638; font-size: 14px; flex-shrink: 0;">✓</span>
+      <span style="font-size: 13px; color: #3a3834;">${i}</span>
+    </div>
+  `).join('');
+
+  const ctaLabel = ocrState.fromOnboarding ? 'Continue to next step →' : 'Done — back to Home →';
+
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    <div style="padding: 18px 16px 0;">
+      <div style="text-align: center; font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500;">3 · SAVE CONFIRMATION</div>
+    </div>
+    <div class="screen-scroll" style="padding-bottom: 20px;">
+      <div style="padding: 48px 24px 0; text-align: center;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(45,138,78,0.15); display: inline-flex; align-items: center; justify-content: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1f6638" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div style="font-size: 30px; font-weight: 500; letter-spacing: -0.6px; margin-top: 22px;">Saved.</div>
+        <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">Your ${ocrState.savedName} is now in your KKOSH.</div>
+      </div>
+
+      <div style="margin: 28px 16px 0; background: white; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; overflow: hidden; flex-shrink: 0;">${brandLogo(ocrState.brandLogoKey, 44)}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; font-weight: 500;">${ocrState.savedName}</div>
+          <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">${ocrState.savedSpec}${ocrState.room ? ' · ' + ocrState.room : ''}</div>
+        </div>
+        <button onclick="handleOcrView()" style="font-size: 12px; color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">View →</button>
+      </div>
+
+      <div style="margin: 14px 16px 0; background: rgba(168,67,46,0.06); border-radius: 14px; padding: 14px 16px;">
+        <div style="font-size: 11px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500; margin-bottom: 8px;">WE SET UP FOR YOU</div>
+        ${itemsHtml}
+      </div>
+
+      <div style="padding: 26px 16px 0;">
+        <button class="primary-cta" onclick="handleOcrContinue()">${ctaLabel}</button>
+      </div>
+
+      <div style="padding: 16px 24px 0; display: flex; justify-content: center; gap: 16px;">
+        <button onclick="handleOcrView()" style="font-size: 12px; color: #A8432E; font-weight: 500;">View ${ocrState.savedName}</button>
+        <div style="font-size: 12px; color: #c2bdb5;">·</div>
+        <button onclick="handleOcrAddAnother()" style="font-size: 12px; color: #6b6660;">Add another</button>
+      </div>
+    </div>
+  `;
+}
+
+function handleOcrContinue() {
+  if (ocrState.fromOnboarding) goTo('ob-family');
+  else goTo('home');
+}
+function handleOcrView() {
+  // In a real flow we'd route to the newly-created asset. For sim, route to an existing similar asset.
+  if (ocrState.assetType === 'appliance') goTo('asset', { assetId: 'voltas-ac' });
+  else if (ocrState.assetType === 'electronic') goTo('asset', { assetId: 'iphone16' });
+  else goTo('things');
+}
+function handleOcrAddAnother() {
+  // Re-enter the scan step from Universal Add or onboarding
+  if (ocrState.fromOnboarding) goTo('ob-appliance');
+  else { closeAddSheet(); openAddSheet(); }
+}
+
 /* Extend renderAll to include asset + member renderers if on those screens */
 const originalRenderAll = renderAll;
 renderAll = function() {
@@ -3841,6 +5068,8 @@ renderAll = function() {
   if (typeof renderObAppliance === 'function') renderObAppliance();
   if (typeof renderObFamily === 'function') renderObFamily();
   if (typeof renderObReveal === 'function') renderObReveal();
+  if (typeof renderOcrReview === 'function') renderOcrReview();
+  if (typeof renderOcrConfirm === 'function') renderOcrConfirm();
   // Re-render current asset/member if we're on that screen
   if (state.currentScreen === 'asset' && window._currentAssetId) renderAssetCard(window._currentAssetId);
   if (state.currentScreen === 'member' && window._currentMemberId) renderMemberProfile(window._currentMemberId);
