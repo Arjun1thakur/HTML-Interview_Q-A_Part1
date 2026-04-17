@@ -687,6 +687,10 @@ input { font-family: inherit; }
     <div class="screen" id="screen-ob-reveal"></div>
     <div class="screen" id="screen-ocr-review"></div>
     <div class="screen" id="screen-ocr-confirm"></div>
+    <div class="screen" id="screen-wizard-loan"></div>
+    <div class="screen" id="screen-wizard-insurance"></div>
+    <div class="screen" id="screen-wizard-sip"></div>
+    <div class="screen" id="screen-wizard-education"></div>
 
     <!-- Add Vehicle Sheet -->
     <div class="sheet-backdrop" id="addVehicle-backdrop" onclick="closeFormSheet('addVehicle')"></div>
@@ -1160,12 +1164,33 @@ function renderThings() {
   const things = getActiveThings();
   const filter = window._thingsFilter || 'all';
   const categoryFilters = ['all', 'vehicles', 'property', 'electronics', 'appliances', 'other'];
+
+  // Chips with counts
   const filterChips = categoryFilters.map(f => {
-    const label = f === 'all' ? `All ${things.length}` : f.charAt(0).toUpperCase() + f.slice(1);
+    const count = f === 'all' ? things.length : things.filter(t => t.category === f).length;
+    if (f !== 'all' && count === 0) return '';
+    const label = f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1);
     const isActive = filter === f;
-    return `<button onclick="setThingsFilter('${f}')" style="padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; background: ${isActive ? '#1a1a1a' : 'rgba(0,0,0,0.05)'}; color: ${isActive ? 'white' : '#1a1a1a'}; flex-shrink: 0;">${label}</button>`;
+    const alertCount = f === 'all' ? things.filter(t => t.alert).length : things.filter(t => t.category === f && t.alert).length;
+    return `<button onclick="setThingsFilter('${f}')" style="padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; background: ${isActive ? '#1a1a1a' : 'rgba(0,0,0,0.05)'}; color: ${isActive ? 'white' : '#1a1a1a'}; flex-shrink: 0; display: flex; align-items: center; gap: 5px;">
+      ${label} <span style="font-size: 10px; opacity: 0.6;">${count}</span>
+      ${alertCount > 0 && !isActive ? '<div style="width:5px;height:5px;border-radius:50%;background:#C8870D;"></div>' : ''}
+    </button>`;
   }).join('');
+
   const filtered = filter === 'all' ? things : things.filter(t => t.category === filter);
+
+  // Category summary when filtered (not 'all')
+  let categorySummary = '';
+  if (filter !== 'all' && filtered.length > 0) {
+    const alerts = filtered.filter(t => t.alert).length;
+    const clear = filtered.length - alerts;
+    categorySummary = `<div style="padding: 16px 4px 8px;">
+      <div style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">${filter.charAt(0).toUpperCase() + filter.slice(1)}</div>
+      <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${filtered.length} item${filtered.length > 1 ? 's' : ''}${alerts > 0 ? ' · <span style="color: #8a5d09; font-weight: 500;">' + alerts + ' need' + (alerts === 1 ? 's' : '') + ' attention</span>' : ' · all clear'}</div>
+    </div>`;
+  }
+
   const groups = [
     { key: 'vehicles', label: 'VEHICLES', icon: 'car' },
     { key: 'property', label: 'PROPERTY', icon: 'home' },
@@ -1174,6 +1199,7 @@ function renderThings() {
     { key: 'other', label: 'OTHER', icon: 'other' }
   ];
   const visibleGroups = groups.filter(g => filter === 'all' || filter === g.key);
+
   const sectionsHtml = visibleGroups.map(g => {
     const items = filtered.filter(t => t.category === g.key);
     if (items.length === 0) return '';
@@ -1202,19 +1228,29 @@ function renderThings() {
         ${statusHtml}
       </div>`;
     }).join('');
-    const alertCount = items.filter(i => i.alert).length;
-    const metaText = alertCount > 0 ? `${items.length} · ${alertCount} needs care` : `${items.length} · all clear`;
-    return `<div style="padding: 20px 4px 8px; display: flex; align-items: center; justify-content: space-between;"><div style="font-size: 11px; font-weight: 500; letter-spacing: 0.8px;">${g.label}</div><div style="font-size: 10px; color: ${alertCount > 0 ? '#8a5d09' : '#9a958f'};">${metaText}</div></div><div class="section-card" style="margin: 0;">${rows}</div>`;
+
+    // Show group header only in 'all' view
+    if (filter === 'all') {
+      const alertCount = items.filter(i => i.alert).length;
+      const metaText = alertCount > 0 ? `${items.length} · ${alertCount} needs care` : `${items.length} · all clear`;
+      return `<div style="padding: 20px 4px 8px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.8px;">${g.label}</div>
+        <div style="font-size: 10px; color: ${alertCount > 0 ? '#8a5d09' : '#9a958f'};">${metaText}</div>
+      </div><div class="section-card" style="margin: 0;">${rows}</div>`;
+    }
+    // In filtered view, no group header needed
+    return `<div class="section-card" style="margin: 0;">${rows}</div>`;
   }).join('');
+
   const content = filtered.length === 0
     ? `<div class="coming-soon">No items in this category yet.<br><br><button class="primary-cta" style="width:auto; padding: 12px 24px;" onclick="openAddSheet()">+ Add something</button></div>`
-    : sectionsHtml;
+    : categorySummary + sectionsHtml;
+
   scr.innerHTML = `
     <div class="status-bar"></div>
     <div class="header">
       <div class="header-left-title">Things</div>
-      <button class="icon-btn" onclick="showToast('Filter')" style="margin-right: 8px;">${iconSvg('filter', 20, '#1a1a1a')}</button>
-      <button onclick="openAddSheet()" style="font-size: 12px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; color: #1a1a1a; padding: 4px 6px;">+ Add thing</button>
+      <button onclick="openAddSheet()" style="font-size: 12px; font-weight: 500; color: #1a1a1a;">+ Add</button>
     </div>
     <div class="screen-scroll">
       <div style="padding: 10px 16px 0; display: flex; gap: 8px; overflow-x: auto;">${filterChips}</div>
@@ -1229,128 +1265,80 @@ function renderFamily() {
   const scr = document.getElementById('screen-family');
   if (!scr) return;
   const members = getActiveMembers();
+  const things = getActiveThings();
+
   if (members.length <= 1) {
-    scr.innerHTML = `
-      <div class="status-bar"></div>
-      <div class="header">
-        <div class="header-left-title">Family</div>
-        <button onclick="handleAdd('family')" style="font-size: 12px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">+ Add</button>
-      </div>
-      <div class="screen-scroll">
-        <div class="coming-soon">
-          <div style="font-size: 14px; color: #1a1a1a; font-weight: 500;">Just you for now</div>
-          <div style="margin-top: 8px;">Add people you share your household with.</div>
-          <div style="margin-top: 24px;"><button class="primary-cta" style="width: auto; padding: 12px 24px;" onclick="handleAdd('family')">+ Add family member</button></div>
-        </div>
-      </div>
-    `;
+    scr.innerHTML = '<div class="status-bar"></div>' +
+      '<div class="header"><div class="header-left-title">Family</div><button onclick="handleAdd(\'family\')" style="font-size:12px;font-weight:500;">+ Add</button></div>' +
+      '<div class="screen-scroll"><div class="coming-soon"><div style="font-size:14px;font-weight:500;">Just you for now</div><div style="margin-top:8px;">Add people you share your household with.</div><div style="margin-top:24px;"><button class="primary-cta" style="width:auto;padding:12px 24px;" onclick="handleAdd(\'family\')">+ Add family member</button></div></div></div>';
     return;
   }
 
-  // Household summary hero
-  const things = getActiveThings();
-  const totalThings = things.length;
-  const alertCount = things.filter(t => t.alert).length + members.filter(m => m.alert).length;
-  const thingsAlert = things.filter(t => t.alert).length;
+  var monthlyTotal = state.density === 'heavy' ? 62299 : state.density === 'partial' ? 42800 : 18500;
+  var fmtM = function(n) { return n >= 1000 ? '₹' + Math.round(n/1000) + 'k' : '₹' + n; };
+  var catIc = { vehicles: 'car', property: 'home', electronics: 'phone', appliances: 'appliance', other: 'other' };
+  var memberAmounts = { rajinder: 38400, sunita: 8200, khushwant: 15700 };
 
-  // Money totals (same source as Money tab)
-  const monthlyTotal = state.density === 'heavy' ? 62299 : state.density === 'partial' ? 42800 : 18500;
-  const fmtMoney = n => n >= 100000 ? `₹${(n/100000).toFixed(1)}L` : n >= 1000 ? `₹${(n/1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `₹${n}`;
+  var cards = '';
+  for (var mi = 0; mi < members.length; mi++) {
+    var m = members[mi];
+    var myThings = things.filter(function(t) { return t.assignees.includes(m.id); });
+    var amt = memberAmounts[m.id];
+    var hasAlert = !!m.alert;
+    var thingAlerts = myThings.filter(function(t) { return !!t.alert; }).length;
 
-  const hero = `
-    <div style="padding: 20px 20px 4px;">
-      <div style="font-size: 28px; font-weight: 500; letter-spacing: -0.5px; line-height: 1;">Sharmas KKOSH</div>
-      <div style="font-size: 11px; color: #6b6660; margin-top: 6px;">Shared household · admin Khushwant</div>
-    </div>
+    // Thing tiles
+    var tilesHtml = '';
+    if (myThings.length > 0) {
+      var tiles = '';
+      for (var ti = 0; ti < Math.min(myThings.length, 6); ti++) {
+        var t = myThings[ti];
+        var ic = catIc[t.category] || 'other';
+        var dot = t.alert ? '<div style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:#C8870D;border:1.5px solid white;"></div>' : '';
+        var shortName = t.name.split(' ')[0];
+        tiles += '<div style="flex:0 0 44px;display:flex;flex-direction:column;align-items:center;gap:3px;">' +
+          '<div style="position:relative;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;">' +
+          iconSvg(ic, 16, '#6b6660') + dot + '</div>' +
+          '<div style="font-size:8px;color:#6b6660;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:44px;">' + shortName + '</div></div>';
+      }
+      tilesHtml = '<div style="display:flex;flex-direction:row;gap:6px;margin-top:14px;overflow-x:auto;">' + tiles + '</div>';
+    } else {
+      tilesHtml = '<div style="margin-top:12px;font-size:11px;color:#9a958f;">No things yet</div>';
+    }
 
-    <div style="padding: 14px 16px 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-      <button onclick="showToast('Family — you are here')" style="background: white; border-radius: 14px; padding: 12px; text-align: left; border: 0.5px solid rgba(0,0,0,0.06);">
-        <div style="font-size: 9px; color: #6b6660; letter-spacing: 0.5px; font-weight: 500;">PEOPLE</div>
-        <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 4px;">
-          <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">${members.length}</div>
-          ${members.filter(m => m.alert).length > 0 ? `<div style="width: 5px; height: 5px; border-radius: 50%; background: #C8870D; margin-bottom: 6px;"></div>` : ''}
-        </div>
-        <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">managing together</div>
-      </button>
-      <button onclick="goTo('things')" style="background: white; border-radius: 14px; padding: 12px; text-align: left; border: 0.5px solid rgba(0,0,0,0.06);">
-        <div style="font-size: 9px; color: #6b6660; letter-spacing: 0.5px; font-weight: 500;">THINGS</div>
-        <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 4px;">
-          <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">${totalThings}</div>
-          ${thingsAlert > 0 ? `<div style="width: 5px; height: 5px; border-radius: 50%; background: #C8870D; margin-bottom: 6px;"></div>` : ''}
-        </div>
-        <div style="font-size: 10px; color: ${thingsAlert > 0 ? '#8a5d09' : '#9a958f'}; margin-top: 1px;">${thingsAlert > 0 ? `${thingsAlert} need${thingsAlert === 1 ? 's' : ''} care` : 'all clear'}</div>
-      </button>
-      <button onclick="goTo('money')" style="background: white; border-radius: 14px; padding: 12px; text-align: left; border: 0.5px solid rgba(0,0,0,0.06);">
-        <div style="font-size: 9px; color: #6b6660; letter-spacing: 0.5px; font-weight: 500;">MONEY</div>
-        <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 4px;">
-          <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">${fmtMoney(monthlyTotal)}</div>
-        </div>
-        <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">April · ${members.length} members</div>
-      </button>
-    </div>
+    // Alert
+    var alertText = hasAlert ? m.alert : (thingAlerts > 0 ? thingAlerts + ' thing' + (thingAlerts > 1 ? 's' : '') + ' need' + (thingAlerts === 1 ? 's' : '') + ' attention' : '');
+    var alertHtml = alertText ? '<div style="margin-top:12px;padding:8px 10px;background:rgba(200,135,13,0.08);border-radius:8px;font-size:11px;color:#8a5d09;border-left:2px solid #C8870D;">' + alertText + '</div>' : '';
 
-    <div style="padding: 18px 20px 4px; font-size: 11px; font-weight: 500; letter-spacing: 0.8px; color: #1a1a1a;">FAMILY MEMBERS · ${members.length}</div>
-  `;
+    var border = m.self ? 'border:1.5px solid #1a1a1a;' : 'border:0.5px solid rgba(0,0,0,0.04);';
+    var youPill = m.self ? '<span style="font-size:7px;padding:2px 5px;border-radius:6px;background:#1a1a1a;color:white;letter-spacing:0.3px;font-weight:500;">YOU</span>' : '';
+    var avBg = m.self ? '#1a1a1a' : '#A8432E';
+    var subLine = m.role + ' · ' + m.age + (amt ? ' · ' + fmtM(amt) + '/mo' : '');
 
-  // 2-col grid cards
-  const memberCards = members.map(m => {
-    const myThings = things.filter(t => t.assignees.includes(m.id));
-    const myThingAlerts = myThings.filter(t => t.alert).length;
-    const hasAlert = !!m.alert || myThingAlerts > 0;
+    cards += '<div onclick="goTo(\'member\', { memberId: \'' + m.id + '\' })" style="background:white;border-radius:16px;padding:16px;' + border + 'cursor:pointer;">' +
+      '<div style="display:flex;align-items:center;gap:12px;">' +
+        '<div style="width:44px;height:44px;border-radius:50%;background:' + avBg + ';color:white;font-size:17px;display:flex;align-items:center;justify-content:center;font-weight:500;flex-shrink:0;">' + m.initial + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:6px;"><div style="font-size:15px;font-weight:500;">' + m.short + '</div>' + youPill + '</div>' +
+          '<div style="font-size:11px;color:#9a958f;margin-top:2px;">' + subLine + '</div>' +
+        '</div>' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c2bdb5" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>' +
+      '</div>' +
+      tilesHtml + alertHtml +
+    '</div>';
+  }
 
-    const border = m.self ? 'border: 1.5px solid #1a1a1a;' : 'border: 0.5px solid rgba(0,0,0,0.06);';
-    const adminPill = m.self ? `<span style="font-size: 8px; padding: 2px 6px; border-radius: 10px; background: #1a1a1a; color: white; letter-spacing: 0.4px; font-weight: 500;">ADMIN</span>` : '';
+  var addCard = '<div onclick="handleAdd(\'family\')" style="background:transparent;border:1.5px dashed rgba(0,0,0,0.08);border-radius:16px;padding:20px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">' +
+    '<div style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;">' + iconSvg('plus', 14, '#6b6660') + '</div>' +
+    '<div style="font-size:12px;color:#6b6660;font-weight:500;">Add family member</div></div>';
 
-    // Things preview (category counts as tiny dots)
-    const catCounts = {};
-    myThings.forEach(t => { catCounts[t.category] = (catCounts[t.category] || 0) + 1; });
-    const catChips = Object.entries(catCounts).slice(0, 3).map(([cat, n]) => {
-      const icon = cat === 'vehicles' ? 'car' : cat === 'property' ? 'home' : cat === 'electronics' ? 'phone' : cat === 'appliances' ? 'appliance' : 'other';
-      return `<div style="display: flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 10px; background: rgba(0,0,0,0.04); font-size: 10px; color: #6b6660;">${iconSvg(icon, 10, '#6b6660')} <span style="font-weight: 500; color: #1a1a1a;">${n}</span></div>`;
-    }).join('');
-
-    const alertStrip = hasAlert ? `
-      <div style="margin-top: 10px; padding: 7px 9px; background: rgba(200,135,13,0.1); border-radius: 8px; font-size: 10px; color: #8a5d09; line-height: 1.35; border-left: 2px solid #C8870D;">
-        ${m.alert || `${myThingAlerts} thing${myThingAlerts === 1 ? '' : 's'} need${myThingAlerts === 1 ? 's' : ''} care`}
-      </div>
-    ` : '';
-
-    return `
-      <button onclick="goTo('member', { memberId: '${m.id}' })" style="background: white; border-radius: 16px; padding: 14px; ${border} text-align: left; cursor: pointer; position: relative;">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px;">
-          <div class="avatar-lg ${m.self ? 'self' : ''}" style="width: 38px; height: 38px; font-size: 13px;">${m.initial}</div>
-          ${adminPill}
-        </div>
-        <div style="font-size: 14px; font-weight: 500; line-height: 1.2;">${m.short}${m.self ? '' : ''}</div>
-        <div style="font-size: 10px; color: #9a958f; margin-top: 2px;">${m.role} · ${m.age}</div>
-        ${myThings.length > 0 ? `<div style="margin-top: 10px; display: flex; gap: 4px; flex-wrap: wrap;">${catChips}</div>` : `<div style="margin-top: 10px; font-size: 10px; color: #9a958f;">No things yet</div>`}
-        ${alertStrip}
-      </button>
-    `;
-  }).join('');
-
-  const grid = `
-    <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      ${memberCards}
-      <button onclick="handleAdd('family')" style="background: transparent; border: 1.5px dashed rgba(168,67,46,0.35); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 160px; gap: 8px;">
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(168,67,46,0.08); display: flex; align-items: center; justify-content: center;">${iconSvg('plus', 16, '#A8432E')}</div>
-        <div style="font-size: 11px; color: #A8432E; font-weight: 500;">Add member</div>
-      </button>
-    </div>
-  `;
-
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    <div class="header">
-      <div class="header-left-title">Family</div>
-      <button class="icon-btn" onclick="showToast('Search family')" style="margin-right: 8px;">${iconSvg('search', 20, '#1a1a1a')}</button>
-      <button onclick="handleAdd('family')" style="font-size: 12px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; color: #1a1a1a; padding: 4px 6px;">+ Add</button>
-    </div>
-    <div class="screen-scroll">
-      ${hero}
-      ${grid}
-    </div>
-  `;
+  scr.innerHTML = '<div class="status-bar"></div>' +
+    '<div class="header"><div class="header-left-title">Family</div><button onclick="handleAdd(\'family\')" style="font-size:12px;font-weight:500;color:#1a1a1a;">+ Add</button></div>' +
+    '<div class="screen-scroll">' +
+      '<div style="padding:4px 20px 0;"><div style="font-size:26px;font-weight:500;letter-spacing:-0.5px;">Sharmas</div><div style="font-size:11px;color:#6b6660;margin-top:4px;">' + members.length + ' people · ' + things.length + ' things · ' + fmtM(monthlyTotal) + '/mo</div></div>' +
+      '<div style="padding:16px 16px 0;display:flex;flex-direction:column;gap:10px;">' + cards + addCard + '</div>' +
+      '<div style="height:16px;"></div>' +
+    '</div>';
 }
 
 /* ============ MONEY TAB ============ */
@@ -1477,6 +1465,54 @@ function renderProfile() {
   const things = getActiveThings();
   const members = getActiveMembers();
   const myThings = things.filter(t => t.assignees.includes('khushwant')).length;
+
+  // Badge definitions
+  const badges = [
+    { id: 'first-key', name: 'First Key', hint: 'Add your first thing', icon: '🔑', tagline: 'You just opened your KKOSH' },
+    { id: 'road-runner', name: 'Road Runner', hint: 'Add a vehicle', icon: '🏎️', tagline: 'The roads know you' },
+    { id: 'rooted', name: 'Rooted', hint: 'Add a property', icon: '🏡', tagline: "You're grounded" },
+    { id: 'plugged-in', name: 'Plugged In', hint: 'Add an electronic', icon: '⚡', tagline: 'Your digital life, tracked' },
+    { id: 'wired', name: 'Wired', hint: 'Add an appliance', icon: '🔌', tagline: 'Your home hums' },
+    { id: 'wildcard', name: 'Wildcard', hint: 'Add an Other item', icon: '🃏', tagline: 'Everything counts' },
+    { id: 'full-house', name: 'Full House', hint: 'Unlock all 5 categories', icon: '🏠', tagline: "You've covered it all" },
+    { id: 'tribe', name: 'Tribe', hint: '3+ family members', icon: '👥', tagline: 'Your people, your KKOSH' },
+    { id: 'first-blood', name: 'First Blood', hint: 'First payment', icon: '💸', tagline: 'Money moved' },
+    { id: 'rhythm', name: 'Rhythm', hint: '3 months transacting', icon: '🥁', tagline: 'Your household has a rhythm' },
+    { id: 'hawk', name: 'Hawk', hint: 'Zero expired · 30 days', icon: '🦅', tagline: 'Nothing gets past the hawk' },
+    { id: 'kkosh-life', name: 'KKOSH Life', hint: 'All badges earned', icon: '👑', tagline: 'Your household runs on KKOSH' }
+  ];
+
+  // Determine which badges are earned based on state
+  const hasCat = (cat) => things.some(t => t.category === cat);
+  const allCats = ['vehicles', 'property', 'electronics', 'appliances', 'other'].every(c => hasCat(c));
+  const earned = new Set();
+  if (things.length >= 1) earned.add('first-key');
+  if (hasCat('vehicles')) earned.add('road-runner');
+  if (hasCat('property')) earned.add('rooted');
+  if (hasCat('electronics')) earned.add('plugged-in');
+  if (hasCat('appliances')) earned.add('wired');
+  if (hasCat('other')) earned.add('wildcard');
+  if (allCats) earned.add('full-house');
+  if (members.length >= 3) earned.add('tribe');
+  // Simulate transaction badges for heavy density
+  if (state.density === 'heavy') {
+    earned.add('first-blood');
+    earned.add('rhythm');
+    earned.add('hawk');
+  }
+  if (earned.size >= 11) earned.add('kkosh-life');
+
+  const earnedCount = earned.size;
+
+  const badgeGrid = badges.map(b => {
+    const isEarned = earned.has(b.id);
+    return `<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; ${!isEarned ? 'opacity: 0.3;' : ''}">
+      <div style="width: 44px; height: 44px; border-radius: 50%; background: ${isEarned ? 'white' : 'rgba(0,0,0,0.04)'}; display: flex; align-items: center; justify-content: center; font-size: 20px; ${isEarned ? 'box-shadow: 0 2px 8px rgba(0,0,0,0.08);' : ''}">${b.icon}</div>
+      <div style="font-size: 10px; font-weight: 500; color: #1a1a1a; text-align: center; line-height: 1.2;">${b.name}</div>
+      <div style="font-size: 8px; color: ${isEarned ? '#1f6638' : '#9a958f'}; text-align: center; line-height: 1.2;">${isEarned ? b.tagline : b.hint}</div>
+    </div>`;
+  }).join('');
+
   scr.innerHTML = `
     <div class="status-bar"></div>
     <div style="padding: 14px 20px 0; display: flex; align-items: center; justify-content: space-between;">
@@ -1490,19 +1526,44 @@ function renderProfile() {
         <div style="font-size: 11px; color: #6b6660; margin-top: 4px;">+91 98765 43210</div>
         <div style="display: inline-block; margin-top: 10px; font-size: 10px; padding: 4px 10px; border-radius: 20px; background: rgba(0,0,0,0.06); color: #1a1a1a; font-weight: 500; letter-spacing: 0.4px;">ADMIN · SHARMAS</div>
       </div>
+
+      <!-- Stats -->
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 16px;">
         <div style="background: white; border-radius: 14px; padding: 14px 8px; text-align: center;"><div style="font-size: 22px; font-weight: 500;">${myThings}</div><div style="font-size: 9px; color: #6b6660; letter-spacing: 0.4px; margin-top: 2px;">MY THINGS</div></div>
         <div style="background: white; border-radius: 14px; padding: 14px 8px; text-align: center;"><div style="font-size: 22px; font-weight: 500;">3</div><div style="font-size: 9px; color: #6b6660; letter-spacing: 0.4px; margin-top: 2px;">COMMITMENTS</div></div>
         <div style="background: white; border-radius: 14px; padding: 14px 8px; text-align: center;"><div style="font-size: 22px; font-weight: 500;">${members.length}</div><div style="font-size: 9px; color: #6b6660; letter-spacing: 0.4px; margin-top: 2px;">FAMILY</div></div>
       </div>
+
+      <!-- KKOSH Badges -->
+      <div style="padding: 24px 16px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.8px; color: #1a1a1a;">KKOSH BADGES</div>
+          </div>
+          <div style="font-size: 11px; color: #6b6660;">${earnedCount} of ${badges.length}</div>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 14px 8px;">
+          <!-- Progress bar -->
+          <div style="margin: 0 8px 14px; height: 3px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
+            <div style="height: 100%; width: ${Math.round(earnedCount / badges.length * 100)}%; background: #1a1a1a; border-radius: 2px;"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;">
+            ${badgeGrid}
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaction summary -->
       <div class="section-header"><div class="section-title">TRANSACTION SUMMARY</div></div>
-      <div style="padding: 0 20px 8px; font-size: 11px; color: #6b6660; line-height: 1.5;">Payments processed via KKOSH this month, across the household.</div>
+      <div style="padding: 0 20px 8px; font-size: 11px; color: #6b6660; line-height: 1.5;">Payments processed via KKOSH this month.</div>
       <div style="margin: 0 16px; background: white; border-radius: 14px; padding: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: baseline;">
           <div><div style="font-size: 10px; color: #9a958f;">April 2026</div><div style="font-size: 24px; font-weight: 500; margin-top: 2px;">₹52,889</div></div>
           <div style="text-align: right;"><div style="font-size: 11px; color: #1f6638;">₹45,000 paid</div><div style="font-size: 11px; color: #8a5d09; margin-top: 2px;">₹7,889 upcoming</div></div>
         </div>
       </div>
+
+      <!-- Menu items -->
       <div style="margin: 12px 16px 0;">
         <div style="background: white; border-radius: 14px; overflow: hidden;">
           <div class="card-row" onclick="showToast('Connected services')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Connected services</div><div class="row-sub">DigiLocker · Parivahan · BBPS</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
@@ -1734,7 +1795,7 @@ function goTo(screen, params) {
   // Hide tab bar for full-screen experiences (AI, onboarding)
   const tabBar = document.getElementById('tab-bar');
   if (tabBar) {
-    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-') || screen.startsWith('ocr-');
+    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-') || screen.startsWith('ocr-') || screen.startsWith('wizard-');
     tabBar.style.display = hide ? 'none' : 'flex';
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
@@ -1767,13 +1828,11 @@ function handleAdd(type) {
   if (type === 'electronic') { setTimeout(() => openPreScan('electronic'), 150); return; }
   if (type === 'other') { setTimeout(() => openPreScan('other'), 150); return; }
   if (type === 'family') { setTimeout(() => openAddFamily(), 150); return; }
-  if (type === 'loan') { setTimeout(() => openAddLoan(), 150); return; }
-  const flows = {
-    sip: 'SIP · connect broker or manual',
-    insurance: 'Insurance · policy scan',
-    education: 'Education fee · school details'
-  };
-  showToast('Flow: ' + flows[type]);
+  if (type === 'loan') { setTimeout(() => openWizard('loan'), 150); return; }
+  if (type === 'insurance') { setTimeout(() => openWizard('insurance'), 150); return; }
+  if (type === 'sip') { setTimeout(() => openWizard('sip'), 150); return; }
+  if (type === 'education') { setTimeout(() => openWizard('education'), 150); return; }
+  showToast('Flow: ' + type);
 }
 
 /* ============ TOAST ============ */
@@ -1844,7 +1903,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const loading = document.getElementById('screen-loading');
     if (loading && state.currentScreen !== 'loading') loading.classList.remove('active');
-    if (typeof goTo === 'function') goTo(state.currentScreen || 'home');
+    // Fall back to home if saved screen is transient (wizard/ocr/onboarding)
+    let initScreen = state.currentScreen || 'home';
+    if (initScreen.startsWith('wizard-') || initScreen.startsWith('ocr-') || initScreen.startsWith('ob-') || initScreen === 'onboarding-intro') {
+      initScreen = 'home';
+    }
+    if (typeof goTo === 'function') goTo(initScreen);
     renderAll();
   }, 100);
 });
@@ -3012,6 +3076,292 @@ function openPayForProtection(assetId, label, detail, amount) {
 }
 function openPayForUtility(assetId, label, detail, amount) {
   openPaySheet({ assetId, label, detail: `${label} · ${detail.split('·')[0].trim()}`, amount });
+}
+
+/* ============ COMMITMENT WIZARDS (Loan, Insurance, SIP, Education) ============ */
+let wizardState = { type: null, step: 1, data: {} };
+
+function openWizard(type) {
+  wizardState = { type, step: 1, data: {} };
+  goTo('wizard-' + type);
+}
+
+function wizardNext() {
+  wizardState.step++;
+  renderWizard();
+}
+
+function wizardBack() {
+  if (wizardState.step <= 1) { goTo('home'); return; }
+  wizardState.step--;
+  renderWizard();
+}
+
+function wizardDone() {
+  goTo('home');
+}
+
+function renderWizard() {
+  var type = wizardState.type;
+  if (type === 'loan') renderLoanWizard();
+  else if (type === 'insurance') renderInsuranceWizard();
+  else if (type === 'sip') renderSipWizard();
+  else if (type === 'education') renderEducationWizard();
+}
+
+function wizardHeader(emoji, title, step, total) {
+  return '<div class="status-bar"></div>' +
+    '<div style="padding:14px 20px 0;display:flex;align-items:center;gap:12px;">' +
+      '<button class="back-btn" onclick="wizardBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>' +
+      '<div style="flex:1;font-size:15px;font-weight:500;">' + emoji + ' ' + title + '</div>' +
+      '<div style="font-size:11px;color:#6b6660;">Step ' + step + ' of ' + total + '</div>' +
+    '</div>' +
+    '<div style="margin:12px 20px 0;height:3px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + Math.round(step/total*100) + '%;background:#1a1a1a;border-radius:2px;"></div></div>';
+}
+
+function memberPickerCards() {
+  var members = getActiveMembers();
+  return members.map(function(m) {
+    var sel = wizardState.data.memberId === m.id;
+    return '<button onclick="wizardState.data.memberId=\'' + m.id + '\';wizardState.data.memberName=\'' + (m.self ? m.short + ' (You)' : m.short) + '\';wizardNext()" style="width:100%;padding:16px;background:white;border-radius:14px;display:flex;align-items:center;gap:14px;text-align:left;margin-bottom:10px;border:' + (sel ? '1.5px solid #1a1a1a' : '0.5px solid rgba(0,0,0,0.04)') + ';">' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:' + (m.self ? '#1a1a1a' : 'rgba(0,0,0,0.08)') + ';color:' + (m.self ? 'white' : '#1a1a1a') + ';font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:500;">' + m.initial + '</div>' +
+      '<div style="font-size:14px;font-weight:500;">' + (m.self ? m.short + ' (You)' : m.short) + '</div>' +
+      (m.self ? '' : '<div style="margin-left:auto;font-size:11px;color:#6b6660;">' + m.role.split(' ')[0] + '</div>') +
+    '</button>';
+  }).join('');
+}
+
+function assetPickerCards() {
+  var things = getActiveThings();
+  return things.map(function(t) {
+    var owner = t.assignees.map(function(id) { var m = getMemberById(id); return m ? m.short : ''; }).join(', ');
+    return '<button onclick="wizardState.data.assetId=\'' + t.id + '\';wizardState.data.assetName=\'' + t.name.replace(/'/g, '') + '\';wizardNext()" style="width:100%;padding:14px;background:white;border-radius:12px;display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:8px;border:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:32px;height:32px;border-radius:8px;background:#F7F1E8;display:flex;align-items:center;justify-content:center;">' + iconSvg(t.icon, 16, '#1a1a1a') + '</div>' +
+      '<div style="flex:1;font-size:13px;font-weight:500;">' + t.name + '</div>' +
+      '<div style="font-size:10px;color:#6b6660;">' + owner + '</div>' +
+    '</button>';
+  }).join('');
+}
+
+// ---- LOAN WIZARD (6 steps) ----
+function renderLoanWizard() {
+  var scr = document.getElementById('screen-wizard-loan');
+  if (!scr) return;
+  var s = wizardState.step;
+  var total = 6;
+  var h = wizardHeader('💰', 'Loan or EMI', s, total);
+  var body = '';
+
+  if (s === 1) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Who is this loan under?</div>' +
+      '<div style="padding:20px 20px 0;">' + memberPickerCards() + '</div>';
+  } else if (s === 2) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Is this loan linked to an asset?</div>' +
+      '<div style="padding:20px 20px 0;">' +
+        '<button onclick="wizardState.data.linked=true;wizardNext()" style="width:100%;padding:18px;background:white;border-radius:14px;margin-bottom:10px;text-align:left;border:0.5px solid rgba(0,0,0,0.04);"><div style="font-size:14px;font-weight:500;">Yes — link to an asset</div><div style="font-size:11px;color:#6b6660;margin-top:3px;">Shows on the asset card and member\'s Money layer</div></button>' +
+        '<button onclick="wizardState.data.linked=false;wizardState.step=4;renderWizard()" style="width:100%;padding:18px;background:white;border-radius:14px;text-align:left;border:0.5px solid rgba(0,0,0,0.04);"><div style="font-size:14px;font-weight:500;">No — track for member only</div><div style="font-size:11px;color:#6b6660;margin-top:3px;">Shows in member\'s Money layer only</div></button>' +
+      '</div>';
+  } else if (s === 3) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Choose an asset</div>' +
+      '<div style="padding:20px 20px 0;">' + assetPickerCards() + '</div>';
+  } else if (s === 4) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Loan or EMI details</div>' +
+      '<div style="padding:20px 24px 0;">' +
+        '<div class="field-label">Bank / Lender</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;">' +
+          ['HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra', 'Other'].map(function(b) { return '<button class="chip" onclick="wizardState.data.bank=\'' + b + '\'">' + b + '</button>'; }).join('') +
+        '</div>' +
+        '<div class="field-label">Loan type</div><input type="text" class="text-input" placeholder="Home, Car, Personal, Education" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Loan amount</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">EMI amount</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Months remaining</div><input type="text" class="text-input" placeholder="e.g. 120" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Next due date</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="wizardNext()">Continue</button>' +
+      '</div>';
+  } else if (s === 5) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Set up auto-pay</div>' +
+      '<div style="font-size:13px;color:#6b6660;padding:8px 24px 0;">Would you like to set up auto-pay for this EMI?</div>' +
+      '<div style="padding:20px 20px 0;">' +
+        '<button onclick="wizardState.data.autoPay=true;wizardNext()" style="width:100%;padding:18px;background:white;border-radius:14px;margin-bottom:10px;text-align:left;border:0.5px solid rgba(0,0,0,0.04);"><div style="font-size:14px;font-weight:500;">🔄 Yes, set up eNACH mandate</div><div style="font-size:11px;color:#6b6660;margin-top:3px;">Your EMI will be auto-debited each month.</div></button>' +
+        '<button onclick="wizardState.data.autoPay=false;wizardNext()" style="width:100%;padding:18px;background:white;border-radius:14px;text-align:left;border:0.5px solid rgba(0,0,0,0.04);"><div style="font-size:14px;font-weight:500;">✍️ No, I\'ll track manually</div><div style="font-size:11px;color:#6b6660;margin-top:3px;">You\'ll get reminders each month to pay via your existing bank mandate.</div></button>' +
+      '</div>';
+  } else if (s === 6) {
+    var mn = wizardState.data.memberName || 'You';
+    var an = wizardState.data.assetName || '—';
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Review & Save</div>' +
+      '<div style="margin:20px 20px 0;background:white;border-radius:16px;padding:18px;">' +
+        '<div style="font-size:16px;font-weight:500;margin-bottom:14px;">💰 Loan or EMI</div>' +
+        ['Under|' + mn, 'Linked to|' + an, 'Bank / Lender|—', 'Loan type|—', 'Loan amount|—', 'EMI amount|—', 'Months remaining|—', 'Next due date|—', 'Auto-pay (eNACH)|' + (wizardState.data.autoPay ? 'Yes' : 'Not set up')].map(function(r) {
+          var parts = r.split('|');
+          return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:0.5px solid rgba(0,0,0,0.06);font-size:13px;"><span style="color:#6b6660;">' + parts[0] + '</span><span style="font-weight:500;">' + parts[1] + ' <span style="font-size:11px;color:#9a958f;margin-left:4px;">Edit</span></span></div>';
+        }).join('') +
+      '</div>' +
+      '<div style="padding:24px 24px 0;"><button class="form-save-btn" onclick="wizardDone()">Save Commitment</button></div>';
+  }
+
+  scr.innerHTML = h + '<div class="screen-scroll">' + body + '</div>';
+}
+
+// ---- INSURANCE WIZARD (5 steps) ----
+function renderInsuranceWizard() {
+  var scr = document.getElementById('screen-wizard-insurance');
+  if (!scr) return;
+  var s = wizardState.step;
+  var total = 5;
+  var h = wizardHeader('🛡️', 'Insurance Premium', s, total);
+  var body = '';
+
+  if (s === 1) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Who is this insurance for?</div>' +
+      '<div style="padding:20px 20px 0;">' + memberPickerCards() + '</div>';
+  } else if (s === 2) {
+    var types = [
+      { icon: '🏥', label: 'Health insurance' },
+      { icon: '🛡️', label: 'Life / Term insurance' },
+      { icon: '🚗', label: 'Vehicle insurance' },
+      { icon: '🏠', label: 'Home insurance' },
+      { icon: '📱', label: 'Device insurance' },
+      { icon: '📦', label: 'Other' }
+    ];
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">What kind of insurance?</div>' +
+      '<div style="padding:20px 20px 0;">' +
+        types.map(function(t) {
+          return '<button onclick="wizardState.data.insType=\'' + t.label + '\';wizardNext()" style="width:100%;padding:16px;background:white;border-radius:14px;margin-bottom:10px;text-align:left;display:flex;align-items:center;gap:12px;border:0.5px solid rgba(0,0,0,0.04);"><span style="font-size:18px;">' + t.icon + '</span><span style="font-size:14px;font-weight:500;">' + t.label + '</span></button>';
+        }).join('') +
+      '</div>';
+  } else if (s === 3) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Link to an asset</div>' +
+      '<div style="font-size:13px;color:#6b6660;padding:8px 24px 0;">This insurance will appear on the asset\'s Protection layer.</div>' +
+      '<div style="padding:20px 20px 0;">' + assetPickerCards() +
+        '<button onclick="wizardNext()" style="width:100%;padding:14px;text-align:center;font-size:12px;color:#6b6660;margin-top:8px;">Skip — not linked to an asset</button>' +
+      '</div>';
+  } else if (s === 4) {
+    var providers = ['ICICI Lombard', 'HDFC Ergo', 'Bajaj Allianz', 'Star Health', 'LIC', 'Max Bupa', 'Care Health', 'Niva Bupa', 'Tata AIG', 'Reliance General', 'SBI General', 'New India Assurance', 'Other'];
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Insurance details</div>' +
+      '<div style="padding:20px 24px 0;">' +
+        '<div class="field-label">Provider</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;">' + providers.map(function(p) { return '<button class="chip">' + p + '</button>'; }).join('') + '</div>' +
+        '<div class="field-label">Policy number</div><input type="text" class="text-input" placeholder="e.g. HOM2024MH789012" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Sum assured</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Premium amount</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Premium frequency</div>' +
+        '<div class="chip-row" style="margin-bottom:14px;"><button class="chip on">Annual</button><button class="chip">Half-yearly</button><button class="chip">Quarterly</button><button class="chip">Monthly</button></div>' +
+        '<div class="field-label">Next renewal date</div><input type="date" class="text-input" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Payment method</div>' +
+        '<div style="margin-bottom:20px;">' +
+          ['Auto-debited by insurer', 'Auto-debit via KKOSH mandate', 'I pay manually'].map(function(m) { return '<div style="padding:12px;background:rgba(0,0,0,0.03);border-radius:10px;margin-bottom:6px;font-size:13px;">' + m + '</div>'; }).join('') +
+        '</div>' +
+        '<button class="form-save-btn" onclick="wizardNext()">Continue</button>' +
+      '</div>';
+  } else if (s === 5) {
+    var mn = wizardState.data.memberName || 'You';
+    var it = wizardState.data.insType || '—';
+    var an = wizardState.data.assetName || '—';
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Review & Save</div>' +
+      '<div style="margin:20px 20px 0;background:white;border-radius:16px;padding:18px;">' +
+        '<div style="font-size:16px;font-weight:500;margin-bottom:14px;">🛡️ Insurance Premium</div>' +
+        ['Under|' + mn, 'Type|' + it, 'Linked to|' + an, 'Provider|—', 'Policy no.|—', 'Sum assured|—', 'Premium|—', 'Frequency|Annual', 'Next renewal|—', 'Payment|—'].map(function(r) {
+          var parts = r.split('|');
+          return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:0.5px solid rgba(0,0,0,0.06);font-size:13px;"><span style="color:#6b6660;">' + parts[0] + '</span><span style="font-weight:500;">' + parts[1] + ' <span style="font-size:11px;color:#9a958f;margin-left:4px;">Edit</span></span></div>';
+        }).join('') +
+      '</div>' +
+      '<div style="padding:24px 24px 0;"><button class="form-save-btn" onclick="wizardDone()">Save Commitment</button></div>';
+  }
+
+  scr.innerHTML = h + '<div class="screen-scroll">' + body + '</div>';
+}
+
+// ---- SIP WIZARD (4 steps) ----
+function renderSipWizard() {
+  var scr = document.getElementById('screen-wizard-sip');
+  if (!scr) return;
+  var s = wizardState.step;
+  var total = 4;
+  var h = wizardHeader('📈', 'SIP or Investment', s, total);
+  var body = '';
+
+  if (s === 1) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Who is this investment for?</div>' +
+      '<div style="padding:20px 20px 0;">' + memberPickerCards() + '</div>';
+  } else if (s === 2) {
+    var types = [
+      { icon: '📊', label: 'Mutual Fund SIP' },
+      { icon: '📈', label: 'Stocks / Equity' },
+      { icon: '🏦', label: 'Fixed Deposit' },
+      { icon: '🪙', label: 'Gold / SGBs' },
+      { icon: '💎', label: 'PPF / NPS' },
+      { icon: '📦', label: 'Other' }
+    ];
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">What type of investment?</div>' +
+      '<div style="padding:20px 20px 0;">' +
+        types.map(function(t) {
+          return '<button onclick="wizardState.data.sipType=\'' + t.label + '\';wizardNext()" style="width:100%;padding:16px;background:white;border-radius:14px;margin-bottom:10px;text-align:left;display:flex;align-items:center;gap:12px;border:0.5px solid rgba(0,0,0,0.04);"><span style="font-size:18px;">' + t.icon + '</span><span style="font-size:14px;font-weight:500;">' + t.label + '</span></button>';
+        }).join('') +
+      '</div>';
+  } else if (s === 3) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Investment details</div>' +
+      '<div style="padding:20px 24px 0;">' +
+        '<div class="field-label">Platform / Broker</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;">' + ['Zerodha', 'Groww', 'Coin', 'Kuvera', 'ET Money', 'Other'].map(function(b) { return '<button class="chip">' + b + '</button>'; }).join('') + '</div>' +
+        '<div class="field-label">Fund / Scheme name</div><input type="text" class="text-input" placeholder="e.g. Axis Bluechip Fund" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Monthly amount</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">SIP date</div><input type="text" class="text-input" placeholder="e.g. 5th of every month" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Start date</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="wizardNext()">Continue</button>' +
+      '</div>';
+  } else if (s === 4) {
+    var mn = wizardState.data.memberName || 'You';
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Review & Save</div>' +
+      '<div style="margin:20px 20px 0;background:white;border-radius:16px;padding:18px;">' +
+        '<div style="font-size:16px;font-weight:500;margin-bottom:14px;">📈 SIP or Investment</div>' +
+        ['Under|' + mn, 'Type|' + (wizardState.data.sipType || '—'), 'Platform|—', 'Fund|—', 'Monthly|—', 'SIP date|—'].map(function(r) {
+          var parts = r.split('|');
+          return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:0.5px solid rgba(0,0,0,0.06);font-size:13px;"><span style="color:#6b6660;">' + parts[0] + '</span><span style="font-weight:500;">' + parts[1] + '</span></div>';
+        }).join('') +
+      '</div>' +
+      '<div style="padding:24px 24px 0;"><button class="form-save-btn" onclick="wizardDone()">Save Commitment</button></div>';
+  }
+
+  scr.innerHTML = h + '<div class="screen-scroll">' + body + '</div>';
+}
+
+// ---- EDUCATION WIZARD (3 steps) ----
+function renderEducationWizard() {
+  var scr = document.getElementById('screen-wizard-education');
+  if (!scr) return;
+  var s = wizardState.step;
+  var total = 3;
+  var h = wizardHeader('🎓', 'Education Fee', s, total);
+  var body = '';
+
+  if (s === 1) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Whose education fee?</div>' +
+      '<div style="padding:20px 20px 0;">' + memberPickerCards() + '</div>';
+  } else if (s === 2) {
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Fee details</div>' +
+      '<div style="padding:20px 24px 0;">' +
+        '<div class="field-label">School / Institution</div><input type="text" class="text-input" placeholder="e.g. DPS Gurugram" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Class / Course</div><input type="text" class="text-input" placeholder="e.g. Class 5 / B.Tech" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Fee amount</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Frequency</div>' +
+        '<div class="chip-row" style="margin-bottom:14px;"><button class="chip on">Quarterly</button><button class="chip">Half-yearly</button><button class="chip">Annual</button><button class="chip">Monthly</button></div>' +
+        '<div class="field-label">Next due date</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="wizardNext()">Continue</button>' +
+      '</div>';
+  } else if (s === 3) {
+    var mn = wizardState.data.memberName || 'You';
+    body = '<div style="padding:24px 24px 0;font-size:20px;font-weight:500;">Review & Save</div>' +
+      '<div style="margin:20px 20px 0;background:white;border-radius:16px;padding:18px;">' +
+        '<div style="font-size:16px;font-weight:500;margin-bottom:14px;">🎓 Education Fee</div>' +
+        ['For|' + mn, 'School|—', 'Class|—', 'Fee|—', 'Frequency|Quarterly', 'Next due|—'].map(function(r) {
+          var parts = r.split('|');
+          return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:0.5px solid rgba(0,0,0,0.06);font-size:13px;"><span style="color:#6b6660;">' + parts[0] + '</span><span style="font-weight:500;">' + parts[1] + '</span></div>';
+        }).join('') +
+      '</div>' +
+      '<div style="padding:24px 24px 0;"><button class="form-save-btn" onclick="wizardDone()">Save Commitment</button></div>';
+  }
+
+  scr.innerHTML = h + '<div class="screen-scroll">' + body + '</div>';
 }
 
 /* ============ EDIT UTILITIES SHEET ============ */
@@ -5468,17 +5818,22 @@ renderAll = function() {
   if (typeof renderObReveal === 'function') renderObReveal();
   if (typeof renderOcrReview === 'function') renderOcrReview();
   if (typeof renderOcrConfirm === 'function') renderOcrConfirm();
+  if (typeof renderWizard === 'function' && state.currentScreen && state.currentScreen.startsWith('wizard-')) renderWizard();
   // Re-render current asset/member if we're on that screen
   if (state.currentScreen === 'asset' && window._currentAssetId) renderAssetCard(window._currentAssetId);
   if (state.currentScreen === 'member' && window._currentMemberId) renderMemberProfile(window._currentMemberId);
 };
 
-/* Extend goTo to track current asset/member */
+/* Extend goTo to track current asset/member + render wizards */
 const originalGoTo = goTo;
 goTo = function(screen, params) {
   if (params && params.assetId) window._currentAssetId = params.assetId;
   if (params && params.memberId) window._currentMemberId = params.memberId;
   originalGoTo(screen, params);
+  // Render wizard screens after goTo activates the screen div
+  if (screen.startsWith('wizard-') && typeof renderWizard === 'function') {
+    setTimeout(renderWizard, 20);
+  }
 };
 </script>
 </body>
