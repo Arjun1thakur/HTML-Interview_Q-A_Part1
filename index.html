@@ -21,6 +21,20 @@ input { font-family: inherit; }
   background: #F7F1E8; border-radius: 40px; border: 10px solid #1a1a1a;
   overflow: hidden; position: relative; box-shadow: 0 10px 60px rgba(0,0,0,0.25);
 }
+
+/* Capture mode — add ?capture to URL */
+.capture .app-wrapper { height: auto; min-height: 100vh; align-items: flex-start; padding: 20px; }
+.capture .device-frame {
+  height: auto !important; max-height: none !important; overflow: visible !important;
+  border-radius: 30px;
+}
+.capture .sidebar { display: none !important; }
+.capture .screen { position: relative !important; opacity: 1 !important; pointer-events: auto !important; }
+.capture .screen:not(.active) { display: none !important; }
+.capture .screen.active { display: flex !important; }
+.capture .screen-scroll { overflow: visible !important; padding-bottom: 80px !important; }
+.capture .tab-bar { position: relative !important; }
+.capture .sheet-backdrop, .capture .sheet, .capture .toast { display: none !important; }
 .sidebar {
   width: 280px; background: white; border-radius: 16px; padding: 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.08); font-size: 12px; line-height: 1.6;
@@ -128,7 +142,6 @@ input { font-family: inherit; }
 }
 .show-all {
   font-size: 11px; color: #1a1a1a; font-weight: 500;
-  text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;
 }
 .countdown-chip {
   font-size: 10px; padding: 4px 9px; border-radius: 10px;
@@ -657,13 +670,19 @@ input { font-family: inherit; }
     <div class="screen" id="screen-asset"></div>
     <div class="screen" id="screen-member"></div>
     <div class="screen" id="screen-onboarding-intro"></div>
-    <div class="screen" id="screen-ob-gate"></div>
+    <div class="screen" id="screen-ob-phone"></div>
     <div class="screen" id="screen-ob-otp"></div>
+    <div class="screen" id="screen-ob-name"></div>
     <div class="screen" id="screen-ob-vehicle"></div>
+    <div class="screen" id="screen-ob-validate"></div>
     <div class="screen" id="screen-ob-wow"></div>
+    <div class="screen" id="screen-ob-celebrate"></div>
     <div class="screen" id="screen-ob-home"></div>
+    <div class="screen" id="screen-ob-home-saved"></div>
     <div class="screen" id="screen-ob-electronics"></div>
+    <div class="screen" id="screen-ob-electronics-saved"></div>
     <div class="screen" id="screen-ob-appliance"></div>
+    <div class="screen" id="screen-ob-appliance-saved"></div>
     <div class="screen" id="screen-ob-family"></div>
     <div class="screen" id="screen-ob-reveal"></div>
     <div class="screen" id="screen-ocr-review"></div>
@@ -739,6 +758,20 @@ input { font-family: inherit; }
     <div class="sheet tall" id="preScan-sheet">
       <div class="sheet-handle"></div>
       <div id="preScan-form-body"></div>
+    </div>
+
+    <!-- Reminder Action Sheet (Mark done / Snooze / Skip) -->
+    <div class="sheet-backdrop" id="reminderAction-backdrop" onclick="closeFormSheet('reminderAction')"></div>
+    <div class="sheet" id="reminderAction-sheet">
+      <div class="sheet-handle"></div>
+      <div id="reminderAction-form-body"></div>
+    </div>
+
+    <!-- Edit Utilities Sheet -->
+    <div class="sheet-backdrop" id="editUtilities-backdrop" onclick="closeFormSheet('editUtilities')"></div>
+    <div class="sheet tall" id="editUtilities-sheet">
+      <div class="sheet-handle"></div>
+      <div id="editUtilities-form-body"></div>
     </div>
 
     <!-- Add Partner Sheet -->
@@ -1009,13 +1042,33 @@ function renderCareReminders(things) {
       </div>`;
   }
   const reminders = [];
-  if (things.some(t => t.id === 'voltas-ac')) reminders.push({ title: 'Filter cleaning due', sub: 'Voltas AC · in 9 days', chip: '9d', icon: 'appliance', assetId: 'voltas-ac' });
-  if (things.some(t => t.id === 'honda-city')) reminders.push({ title: 'Service due', sub: 'Honda City · 12,000 km · in 3 weeks', chip: '3wk', icon: 'car', assetId: 'honda-city' });
-  if (things.some(t => t.id === 'woodstock')) reminders.push({ title: 'Pest control', sub: 'Woodstock 15 SF · in 28 days', chip: '4wk', icon: 'home', assetId: 'woodstock' });
+  if (things.some(t => t.id === 'voltas-ac')) reminders.push({ title: 'Filter cleaning due', sub: 'Voltas AC', chip: '9d', assetId: 'voltas-ac', assignee: 'rajinder' });
+  if (things.some(t => t.id === 'honda-city')) reminders.push({ title: 'Service due', sub: 'Honda City · 12,000 km', chip: '3wk', assetId: 'honda-city', assignee: null });
+  if (things.some(t => t.id === 'woodstock')) reminders.push({ title: 'Pest control', sub: 'Woodstock 15 SF', chip: '4wk', assetId: 'woodstock', assignee: null });
   if (reminders.length === 0) return '';
   const shown = reminders.slice(0, 2);
-  const rows = shown.map(r => `<div class="card-row" onclick="goTo('asset', { assetId: '${r.assetId}' })"><div class="row-icon-tile">${iconSvg(r.icon, 16, '#1a1a1a')}</div><div class="row-main"><div class="row-title">${r.title}</div><div class="row-sub">${r.sub}</div></div><div class="countdown-chip">${r.chip}</div></div>`).join('');
-  const showAll = reminders.length > 2 ? `<div class="show-all-row" onclick="showToast('All ${reminders.length} reminders')"><div class="show-all">Show all ${reminders.length}</div></div>` : '';
+  const rows = shown.map(r => {
+    const assigneeM = r.assignee ? getMemberById(r.assignee) : null;
+    const assigneeHtml = assigneeM
+      ? `<div style="display: flex; align-items: center; gap: 4px; margin-top: 3px;">
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: ${assigneeM.self ? '#1a1a1a' : '#A8432E'}; color: white; font-size: 7px; display: flex; align-items: center; justify-content: center; font-weight: 500;">${assigneeM.initial}</div>
+          <span style="font-size: 9px; color: #6b6660;">${assigneeM.short}</span>
+        </div>`
+      : '';
+    // Tap opens the action sheet (mark done / snooze / skip)
+    const reminderData = JSON.stringify({ title: r.title, sub: r.sub, chip: r.chip, assetId: r.assetId, assignee: r.assignee }).replace(/"/g, '&quot;');
+    return `<div class="card-row" onclick="openReminderAction(JSON.parse(this.getAttribute('data-r')))" data-r="${reminderData}">
+      <div class="row-main">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 500;">${r.title}</div>
+          <div class="countdown-chip">${r.chip}</div>
+        </div>
+        <div class="row-sub">${r.sub}</div>
+        ${assigneeHtml}
+      </div>
+    </div>`;
+  }).join('');
+  const showAll = reminders.length > 2 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="showToast('All ${reminders.length} reminders')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">Show all ${reminders.length}</div></div>` : '';
   return `<div class="section-header"><div class="section-title">CARE REMINDERS</div><div class="section-meta">${reminders.length}</div></div><div class="section-card">${rows}${showAll}</div>`;
 }
 
@@ -1783,6 +1836,10 @@ function iconSvg(name, size = 20, color = '#1a1a1a') {
 
 /* ============ INIT ============ */
 window.addEventListener('DOMContentLoaded', () => {
+  // Capture mode — add ?capture to URL to render full-height for screenshots
+  if (window.location.search.includes('capture')) {
+    document.body.classList.add('capture');
+  }
   // Remove loading screen once real screens are registered
   setTimeout(() => {
     const loading = document.getElementById('screen-loading');
@@ -1841,11 +1898,14 @@ function renderAssetCard(assetId) {
   window._assetExpand = window._assetExpand || {};
   const expand = window._assetExpand[assetId] || {};
 
-  // Top care reminder pill (just above hero or just below)
+  // Top care reminder — compact notification chip, not a full-width card
   const topReminder = config.topReminder ? `
-    <div style="margin: 10px 16px 0; background: white; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="showToast('${config.topReminder.title}')">
-      <div style="flex: 1; font-size: 12px; font-weight: 500;">${config.topReminder.title}</div>
-      <div style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #6b6660;">${iconSvg('clock', 11, '#9a958f')} <span>${config.topReminder.chip}</span></div>
+    <div style="padding: 10px 20px 0; display: flex; justify-content: flex-start;">
+      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: white; border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer;" onclick="showToast('${config.topReminder.title}')">
+        <span style="font-size: 11px; color: #6b6660;">${iconSvg('clock', 11, '#9a958f')}</span>
+        <span style="font-size: 11px; font-weight: 500;">${config.topReminder.title}</span>
+        <span style="font-size: 10px; color: #6b6660;">· ${config.topReminder.chip}</span>
+      </div>
     </div>
   ` : '';
 
@@ -1960,14 +2020,12 @@ function renderAssetCard(assetId) {
         ? `toggleAssetSection('${assetId}', '${rowKey}')`
         : `showToast('${p.label} detail')`;
 
-      // Right-top: either the pill (collapsed) or pill + Hide button (expanded)
-      const rightTop = isRowExpanded
-        ? `<div style="display: flex; align-items: center; gap: 10px;">${stateRight}<button onclick="event.stopPropagation(); toggleAssetSection('${assetId}', '${rowKey}')" style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Hide</button></div>`
-        : stateRight;
+      // Right-top: pill only. When expanded, no Hide text — the ⌃ at bottom-right handles collapse
+      const rightTop = stateRight;
 
       // Subtle chevron at bottom-right (only for rows with history, and only when collapsed)
-      const historyAffordance = (hasHistory && !isRowExpanded)
-        ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5; letter-spacing: 0;">⌄</div>`
+      const historyAffordance = hasHistory
+        ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5; letter-spacing: 0;">${isRowExpanded ? '⌃' : '⌄'}</div>`
         : '';
 
       const amountInline = p.inlinePay
@@ -2017,24 +2075,32 @@ function renderAssetCard(assetId) {
     const remainingHtml = isExpanded ? remaining.map(renderRow).join('') : '';
 
     const toggleRow = remaining.length > 0 ? `
-      <div class="show-all-row" onclick="toggleAssetSection('${assetId}', 'protection')">
-        <div class="show-all">${isExpanded ? '↑ Collapse' : `Show all ${config.protection.length} protections ↓`}</div>
+      <div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAssetSection('${assetId}', 'protection')">
+        <div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">${isExpanded ? '⌃' : `Show all ${config.protection.length} protections ↓`}</div>
       </div>
     ` : '';
 
+    // Sync timestamp lives as a subtle footer inside the card, not in the header
+    const syncFooter = config.protectionSync ? `
+      <div style="padding: 8px 14px; display: flex; align-items: center; gap: 4px; cursor: pointer;" onclick="showToast('Syncing with ${config.protectionSync.source}...')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c2bdb5" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        <span style="font-size: 9px; color: #c2bdb5;">${config.protectionSync.source} · ${config.protectionSync.time}</span>
+      </div>
+    ` : '';
+
+    // Summary meta line as the first item inside the card
+    const summaryLine = `
+      <div style="padding: 10px 14px 6px; font-size: 10px; color: ${urgentCountColor};">
+        ${countText}
+      </div>
+    `;
+
     protectionHtml = `
       <div class="section-header">
-        <div style="display: flex; align-items: baseline; gap: 6px;">
-          <div class="section-title">PROTECTION</div>
-          <div style="font-size: 10px; color: ${urgentCountColor};">· ${countText}</div>
-        </div>
-        ${config.protectionSync ? `<button onclick="showToast('Syncing with ${config.protectionSync.source}...')" style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #6b6660;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b6660" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          <span>${config.protectionSync.source} · ${config.protectionSync.time}</span>
-        </button>` : ''}
+        <div class="section-title">PROTECTION</div>
       </div>
       <div class="section-card">
-        ${visibleHtml}${remainingHtml}${toggleRow}
+        ${summaryLine}${visibleHtml}${remainingHtml}${toggleRow}${syncFooter}
       </div>
     `;
   }
@@ -2079,16 +2145,14 @@ function renderAssetCard(assetId) {
         ? `toggleAssetSection('${assetId}', '${rowKey}')`
         : `showToast('${u.label}')`;
 
-      // Right side: PAY / PAID pill + Hide when expanded
+      // Right side: PAY / PAID pill only — no Hide text, chevron at bottom handles collapse
       const statusElement = isDue
         ? `<button onclick="event.stopPropagation(); openPayForUtility('${assetId}', '${u.label.replace(/'/g, "\\'")}', '${u.detail.replace(/'/g, "\\'")}', ${u.amount})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`
         : `<span class="state-pill active">PAID</span>`;
-      const rightCluster = isRowExpanded
-        ? `<div style="display: flex; align-items: center; gap: 10px;">${statusElement}<button onclick="event.stopPropagation(); toggleAssetSection('${assetId}', '${rowKey}')" style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Hide</button></div>`
-        : statusElement;
+      const rightCluster = statusElement;
 
-      const historyAffordance = (hasHistory && !isRowExpanded)
-        ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5;">⌄</div>`
+      const historyAffordance = hasHistory
+        ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5;">${isRowExpanded ? '⌃' : '⌄'}</div>`
         : '';
 
       const detail = isDue
@@ -2126,19 +2190,20 @@ function renderAssetCard(assetId) {
 
     return `
       <div class="section-header">
-        <div style="display: flex; align-items: baseline; gap: 6px;">
-          <div class="section-title">UTILITIES & DUES</div>
-          <div style="font-size: 10px; color: ${countColor};">· ${countText}</div>
-        </div>
-        ${config.utilitiesSync ? `<button onclick="showToast('Syncing with ${config.utilitiesSync.source}...')" style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #6b6660;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b6660" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          <span>${config.utilitiesSync.source} · ${config.utilitiesSync.time}</span>
-        </button>` : ''}
+        <div class="section-title">UTILITIES & DUES</div>
+        ${t.category === 'property' ? `<button onclick="openEditUtilities('${assetId}')" style="font-size: 11px; color: #1a1a1a; font-weight: 500;">+ Add / Edit</button>` : ''}
       </div>
       <div class="section-card">
+        <div style="padding: 10px 14px 6px; font-size: 10px; color: ${countColor};">
+          ${countText}
+        </div>
         ${visibleDue.map(renderUtilRow).join('')}
         ${isExpanded ? remaining.map(renderUtilRow).join('') : ''}
-        ${remaining.length > 0 ? `<div class="show-all-row" onclick="toggleAssetSection('${assetId}', 'utilities')"><div class="show-all">${isExpanded ? '↑ Collapse' : `Show all ${config.utilities.length} utilities ↓`}</div></div>` : ''}
+        ${remaining.length > 0 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAssetSection('${assetId}', 'utilities')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">${isExpanded ? '⌃' : `Show all ${config.utilities.length} utilities ↓`}</div></div>` : ''}
+        ${config.utilitiesSync ? `<div style="padding: 8px 14px; display: flex; align-items: center; gap: 4px; cursor: pointer;" onclick="showToast('Syncing with ${config.utilitiesSync.source}...')">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c2bdb5" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          <span style="font-size: 9px; color: #c2bdb5;">${config.utilitiesSync.source} · ${config.utilitiesSync.time}</span>
+        </div>` : ''}
       </div>
     `;
   })() : '';
@@ -2291,8 +2356,10 @@ function renderAssetCard(assetId) {
     return `
       ${sectionHeader('CARE REMINDERS', { count: `· ${config.reminders.length}`, action: "handleAssetAdd('reminder', '" + t.id + "')", actionLabel: '+ Add' })}
       <div class="section-card">
-        ${visible.map(r => `
-          <div class="card-row" style="padding: 12px 14px;" onclick="showToast('${r.title}')">
+        ${visible.map(r => {
+          const rData = JSON.stringify({ title: r.title, sub: r.detail, chip: r.chip, assetId: t.id, assignee: null }).replace(/"/g, '&quot;');
+          return `
+          <div class="card-row" style="padding: 12px 14px;" onclick="openReminderAction(JSON.parse(this.getAttribute('data-r')))" data-r="${rData}">
             <div class="row-main">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                 <div style="font-size: 13px; font-weight: 500;">${r.title}</div>
@@ -2301,8 +2368,8 @@ function renderAssetCard(assetId) {
               <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${r.detail}</div>
             </div>
           </div>
-        `).join('')}
-        ${config.reminders.length > 2 ? `<div class="show-all-row" onclick="toggleAssetSection('${assetId}', 'reminders')"><div class="show-all">${isExpanded ? '↑ Collapse' : `Show all ${config.reminders.length} ↓`}</div></div>` : ''}
+        `}).join('')}
+        ${config.reminders.length > 2 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAssetSection('${assetId}', 'reminders')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">${isExpanded ? '⌃' : `Show all ${config.reminders.length} ↓`}</div></div>` : ''}
       </div>
     `;
   })() : '';
@@ -2381,15 +2448,20 @@ function renderAssetCard(assetId) {
     </div>
   ` : '';
 
-  // PRIMARY CTA + ARCHIVE
+  // PEOPLE layer removed — collaboration handled via "Assign to" in Care Reminders
+  // Phase 1: family sees all reminders, so assigning a reminder IS the collaboration
+
+  // PRIMARY CTA — restrained text link; hidden for property cards
   const shortName = t.name.split(' ').slice(0, 2).join(' ');
   const archiveLabel = (t.category === 'property' && t.mode === 'you-rent') ? 'Move out · Archive' : 'Archive this asset';
+  const showAskAi = t.category !== 'property';
   const ctaHtml = `
-    <div style="padding: 24px 16px 8px;">
-      <button class="primary-cta" onclick="openAiAsk('${t.id}')">${iconSvg('sparkle', 14, 'white')} Ask about your ${shortName}</button>
-    </div>
-    <div style="text-align: center; padding: 8px 16px 0;">
-      <button onclick="openArchiveSheet('${t.id}')" style="font-size: 10px; color: #9a958f; padding: 4px 8px;">${archiveLabel}</button>
+    <div style="padding: 20px 16px 8px; display: flex; align-items: center; justify-content: ${showAskAi ? 'space-between' : 'flex-end'};">
+      ${showAskAi ? `<button onclick="openAiAsk('${t.id}')" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #1a1a1a; font-weight: 500;">
+        ${iconSvg('sparkle', 13, '#A8432E')}
+        <span>Ask about ${shortName}</span>
+      </button>` : ''}
+      <button onclick="openArchiveSheet('${t.id}')" style="font-size: 10px; color: #9a958f;">${archiveLabel}</button>
     </div>
   `;
 
@@ -2434,17 +2506,17 @@ function toggleAssetSection(assetId, section) {
 /* Render an inline past-records block (matches screenshot pattern) */
 function renderHistoryBlock(records) {
   return `
-    <div style="margin-top: 12px; padding-top: 12px; border-top: 0.5px solid rgba(0,0,0,0.08);">
-      <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">PAST RECORDS</div>
-      ${records.map(r => `
-        <div style="padding: 8px 0; display: flex; justify-content: space-between; align-items: baseline; border-top: 0.5px solid rgba(0,0,0,0.05);">
+    <div style="margin-top: 12px; background: #F7F1E8; border-radius: 10px; padding: 12px; border: 0.5px solid rgba(0,0,0,0.06);">
+      <div style="font-size: 9px; letter-spacing: 0.6px; color: #9a958f; font-weight: 500; margin-bottom: 8px;">PAST RECORDS</div>
+      ${records.map((r, i) => `
+        <div style="padding: 8px 0; display: flex; justify-content: space-between; align-items: baseline; ${i > 0 ? 'border-top: 0.5px solid rgba(0,0,0,0.06);' : ''}">
           <div>
-            <div style="font-size: 12px; font-weight: 500;">${r.label}</div>
-            <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">${r.sub}</div>
+            <div style="font-size: 11px; font-weight: 500; color: #3a3834;">${r.label}</div>
+            <div style="font-size: 9px; color: #9a958f; margin-top: 1px;">${r.sub}</div>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 12px; font-weight: 500;">₹${r.amount.toLocaleString('en-IN')}</div>
-            <div style="font-size: 10px; color: #1f6638; margin-top: 1px;">✓ ${r.status || 'Paid'}</div>
+            <div style="font-size: 11px; font-weight: 500; color: #3a3834;">₹${r.amount.toLocaleString('en-IN')}</div>
+            <div style="font-size: 9px; color: #1f6638; margin-top: 1px;">✓ ${r.status || 'Paid'}</div>
           </div>
         </div>
       `).join('')}
@@ -2597,12 +2669,24 @@ function renderReminderForm(assetId) {
   const quick = getQuickAddOptions(assetId, 'reminder');
   const selectedQuick = formState.selections.task || '';
   const frequency = formState.selections.frequency || 'Every 3 months';
+  const assignee = formState.selections.assignee || '';
   const chips = quick.reminders.map(r =>
     `<button class="chip ${selectedQuick === r ? 'active' : ''}" onclick="updateFormSelection('task', '${r}')">${r}</button>`
   ).join('');
   const freqChips = ['Every month', 'Every 3 months', 'Every 6 months', 'Every year'].map(f =>
     `<button class="chip ${frequency === f ? 'active' : ''}" onclick="updateFormSelection('frequency', '${f}')">${f}</button>`
   ).join('');
+
+  // Assign to — all family members
+  const members = getActiveMembers();
+  const assignChips = members.map(m => {
+    const isSelected = assignee === m.id;
+    return `<button onclick="updateFormSelection('assignee', '${m.id}')" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 12px; background: ${isSelected ? '#1a1a1a' : 'rgba(0,0,0,0.04)'}; border: 1.5px solid ${isSelected ? '#1a1a1a' : 'transparent'}; min-width: 52px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: ${isSelected ? 'white' : (m.self ? '#1a1a1a' : '#A8432E')}; color: ${isSelected ? '#1a1a1a' : 'white'}; font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 500;">${m.initial}</div>
+      <div style="font-size: 9px; font-weight: 500; color: ${isSelected ? 'white' : '#1a1a1a'};">${m.self ? 'Me' : m.short}</div>
+    </button>`;
+  }).join('');
+
   body.innerHTML = `
     <div class="field-label">Quick add</div>
     <div class="chip-row" style="margin-bottom: 16px;">${chips}</div>
@@ -2615,6 +2699,12 @@ function renderReminderForm(assetId) {
 
     <div class="field-label">Next due date</div>
     <input type="date" class="text-input" oninput="formState.selections.date = this.value" style="margin-bottom: 16px;" />
+
+    <div class="field-label">Assign to (optional)</div>
+    <div style="font-size: 10px; color: #9a958f; margin-bottom: 8px;">Everyone in the household will see this reminder</div>
+    <div style="display: flex; gap: 6px; overflow-x: auto; margin-bottom: 16px;">
+      ${assignChips}
+    </div>
 
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Use OEM filter only" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
@@ -2632,7 +2722,9 @@ function refreshReminderBtn() {
 function saveReminder() { formState.selections.task = formState.selections.task || "Demo reminder";
   if (!formState.selections.task) return;
   closeFormSheet('reminder');
-  showToast(`Reminder set: ${formState.selections.task}`);
+  const assignee = formState.selections.assignee ? getMemberById(formState.selections.assignee) : null;
+  const assignText = assignee ? ` · assigned to ${assignee.self ? 'you' : assignee.short}` : '';
+  showToast(`Reminder set: ${formState.selections.task}${assignText}`);
 }
 
 /* COMPONENT FORM */
@@ -2692,6 +2784,13 @@ function renderServiceForm(assetId) {
   const body = document.getElementById('service-form-body');
   if (!body) return;
   const today = new Date().toISOString().slice(0, 10);
+  const doneBy = formState.selections.doneBy || 'khushwant';
+  const members = getActiveMembers();
+  const doneByChips = members.map(m => {
+    const isSelected = doneBy === m.id;
+    return `<div onclick="formState.selections.doneBy = '${m.id}'; renderServiceForm('${assetId}')" style="width: 28px; height: 28px; border-radius: 50%; background: ${isSelected ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; color: ${isSelected ? 'white' : '#1a1a1a'}; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 500; cursor: pointer;">${m.initial}</div>`;
+  }).join('');
+
   body.innerHTML = `
     <div class="field-label">What was done?</div>
     <input type="text" class="text-input dark-border" placeholder="e.g. Oil change, Gas top-up" oninput="formState.selections.task = this.value; refreshServiceBtn()" style="margin-bottom: 16px;" autofocus />
@@ -2707,12 +2806,18 @@ function renderServiceForm(assetId) {
       </div>
     </div>
 
+    <div class="field-label">Done by</div>
+    <div style="display: flex; gap: 6px; margin-bottom: 16px;">
+      ${doneByChips}
+    </div>
+
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Used Mobil 1 synthetic" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
     <button id="service-save-btn" class="form-save-btn" onclick="saveService()">Save Service Log</button>
   `;
   formState.selections.date = today;
+  formState.selections.doneBy = doneBy;
   refreshServiceBtn();
 }
 function refreshServiceBtn() {
@@ -2724,7 +2829,8 @@ function refreshServiceBtn() {
 function saveService() { formState.selections.task = formState.selections.task || "Demo service";
   if (!formState.selections.task) return;
   closeFormSheet('service');
-  showToast(`Service logged: ${formState.selections.task}`);
+  const who = getMemberById(formState.selections.doneBy || 'khushwant');
+  showToast(`Service logged: ${formState.selections.task} · by ${who ? (who.self ? 'you' : who.short) : 'you'}`);
 }
 
 /* PAY SHEET */
@@ -2732,7 +2838,7 @@ let payContext = null;
 function openPaySheet(ctx) {
   // ctx = { assetId, label, detail, amount }
   payContext = ctx;
-  formState = { type: 'pay', selections: { method: 'upi' } };
+  formState = { type: 'pay', selections: { method: 'upi', paidBy: 'khushwant' } };
   document.getElementById('pay-backdrop').classList.add('active');
   document.getElementById('pay-sheet').classList.add('active');
   renderPayForm();
@@ -2742,6 +2848,9 @@ function renderPayForm() {
   if (!body || !payContext) return;
   const t = getThingById(payContext.assetId);
   const method = formState.selections.method || 'upi';
+  const paidBy = formState.selections.paidBy || 'khushwant';
+  const members = getActiveMembers();
+
   const methodData = [
     { key: 'upi', title: 'UPI', sub: 'Google Pay, PhonePe, others' },
     { key: 'card', title: 'Credit / Debit card', sub: '' },
@@ -2758,7 +2867,11 @@ function renderPayForm() {
     </button>
   `).join('');
 
-  // Asset icon
+  const paidByChips = members.map(m => {
+    const isSelected = paidBy === m.id;
+    return `<div onclick="formState.selections.paidBy = '${m.id}'; renderPayForm()" style="width: 28px; height: 28px; border-radius: 50%; background: ${isSelected ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; color: ${isSelected ? 'white' : '#1a1a1a'}; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 500; cursor: pointer;">${m.initial}</div>`;
+  }).join('');
+
   const assetIconHtml = t
     ? `<div style="width: 44px; height: 44px; border-radius: 10px; background: #F7F1E8; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconSvg(t.icon, 22, '#1a1a1a')}</div>`
     : '';
@@ -2901,8 +3014,390 @@ function openPayForUtility(assetId, label, detail, amount) {
   openPaySheet({ assetId, label, detail: `${label} · ${detail.split('·')[0].trim()}`, amount });
 }
 
+/* ============ EDIT UTILITIES SHEET ============ */
+let editUtilitiesAssetId = null;
+let utilityToggles = {};
+let utilityConfigStep = 'list'; // list | provider | consumer
+let utilityConfigType = null; // which utility is being configured
+let utilityConfigProvider = null;
+
+function openEditUtilities(assetId) {
+  editUtilitiesAssetId = assetId;
+  const t = getThingById(assetId);
+  const config = getAssetConfig(t);
+  utilityToggles = {};
+  if (config.utilities) {
+    config.utilities.forEach(u => { utilityToggles[u.label] = true; });
+  }
+  utilityConfigStep = 'list';
+  utilityConfigType = null;
+  utilityConfigProvider = null;
+  document.getElementById('editUtilities-backdrop').classList.add('active');
+  document.getElementById('editUtilities-sheet').classList.add('active');
+  renderEditUtilities();
+}
+
+// Provider data per utility type
+const utilityProviders = {
+  'Electricity': [
+    { name: 'BSES Rajdhani', region: 'Delhi South/West' },
+    { name: 'BSES Yamuna', region: 'Delhi East' },
+    { name: 'TATA Power Delhi', region: 'Delhi North' },
+    { name: 'DHBVN', region: 'Haryana' },
+    { name: 'UHBVN', region: 'Haryana North' },
+    { name: 'BESCOM', region: 'Bengaluru' },
+    { name: 'MSEDCL', region: 'Maharashtra' }
+  ],
+  'Water': [
+    { name: 'Delhi Jal Board', region: 'Delhi' },
+    { name: 'GMDA', region: 'Gurugram' },
+    { name: 'BWSSB', region: 'Bengaluru' },
+    { name: 'MCGM', region: 'Mumbai' }
+  ],
+  'Gas (piped)': [
+    { name: 'IGL', region: 'Delhi NCR' },
+    { name: 'Mahanagar Gas', region: 'Mumbai' },
+    { name: 'Adani Gas', region: 'Multiple cities' }
+  ],
+  'Internet': [
+    { name: 'Airtel Xstream', region: 'Pan India' },
+    { name: 'JioFiber', region: 'Pan India' },
+    { name: 'ACT Fibernet', region: 'South & West' },
+    { name: 'BSNL', region: 'Pan India' },
+    { name: 'Tata Play Fiber', region: 'Metro cities' }
+  ],
+  'DTH / Cable TV': [
+    { name: 'Tata Play', region: 'Pan India' },
+    { name: 'Airtel Digital TV', region: 'Pan India' },
+    { name: 'Dish TV', region: 'Pan India' },
+    { name: 'Sun Direct', region: 'South India' }
+  ],
+  'Cooking gas (cylinder)': [
+    { name: 'Indane (IOCL)', region: 'Pan India' },
+    { name: 'HP Gas', region: 'Pan India' },
+    { name: 'Bharat Gas', region: 'Pan India' }
+  ]
+};
+
+// Consumer number label per utility
+const consumerLabels = {
+  'Electricity': { label: 'Consumer number / CA number', placeholder: 'e.g. 1234567890', hint: 'Found on your electricity bill, top-right corner' },
+  'Water': { label: 'Consumer ID', placeholder: 'e.g. WS-2024-00456', hint: 'Found on your water bill' },
+  'Gas (piped)': { label: 'BP Number', placeholder: 'e.g. 3012345678', hint: 'Found on your gas bill or meter' },
+  'Internet': { label: 'Account number / Customer ID', placeholder: 'e.g. ACT-GGN-78901', hint: 'Found in your ISP app or bill' },
+  'DTH / Cable TV': { label: 'Subscriber ID / VC number', placeholder: 'e.g. 012345678901', hint: 'Found on your set-top box or app' },
+  'Cooking gas (cylinder)': { label: 'LPG Consumer number', placeholder: 'e.g. 204-123-456789', hint: '17-digit number on your passbook' }
+};
+
+function renderEditUtilities() {
+  const body = document.getElementById('editUtilities-form-body');
+  if (!body) return;
+  const t = getThingById(editUtilitiesAssetId);
+
+  if (utilityConfigStep === 'list') {
+    renderUtilityList(body, t);
+  } else if (utilityConfigStep === 'provider') {
+    renderProviderPicker(body);
+  } else if (utilityConfigStep === 'consumer') {
+    renderConsumerInput(body);
+  }
+}
+
+function renderUtilityList(body, t) {
+  const config = getAssetConfig(t);
+  const allPossible = [
+    { label: 'Electricity', icon: '⚡' },
+    { label: 'Water', icon: '💧' },
+    { label: 'Gas (piped)', icon: '🔥' },
+    { label: 'Internet', icon: '📶' },
+    { label: 'Society fee', icon: '🏢' },
+    { label: 'Maintenance', icon: '🔧' },
+    { label: 'Cook salary', icon: '👨‍🍳' },
+    { label: 'Maid salary', icon: '🧹' },
+    { label: 'Driver salary', icon: '🚗' },
+    { label: 'Cooking gas (cylinder)', icon: '🔴' },
+    { label: 'DTH / Cable TV', icon: '📺' },
+    { label: 'Gardener', icon: '🌿' }
+  ];
+
+  const activeLabels = new Set(config.utilities ? config.utilities.map(u => u.label) : []);
+  const activeRows = allPossible.filter(u => activeLabels.has(u.label) || utilityToggles[u.label]);
+  const availableToAdd = allPossible.filter(u => !activeLabels.has(u.label) && !utilityToggles[u.label]);
+
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <div style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Utilities & Dues</div>
+      <button class="sheet-close" onclick="closeFormSheet('editUtilities')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 14px;">
+      Manage utilities for ${t.name}. Connected utilities auto-fetch bills via BBPS.
+    </div>
+
+    ${activeRows.length > 0 ? `
+      <div style="background: white; border-radius: 14px; padding: 2px 14px 8px; margin-bottom: 14px;">
+        <div style="padding: 12px 0 8px; font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500;">CONFIGURED</div>
+        ${activeRows.map(u => `
+          <div style="padding: 12px 0; display: flex; align-items: center; gap: 12px; border-top: 0.5px solid rgba(0,0,0,0.06);">
+            <div style="font-size: 16px; width: 24px; text-align: center;">${u.icon}</div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 500;">${u.label}</div>
+              <div style="font-size: 10px; color: #1f6638; margin-top: 1px;">Connected via BBPS</div>
+            </div>
+            <button onclick="toggleUtility('${u.label}', false)" style="width: 44px; height: 26px; border-radius: 13px; background: #1a1a1a; position: relative;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background: white; position: absolute; top: 3px; right: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></div>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${availableToAdd.length > 0 ? `
+      <div style="background: white; border-radius: 14px; padding: 2px 14px 8px;">
+        <div style="padding: 12px 0 8px; font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500;">ADD NEW</div>
+        ${availableToAdd.map(u => {
+          const hasBbps = !!utilityProviders[u.label];
+          return `
+          <div style="padding: 12px 0; display: flex; align-items: center; gap: 12px; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="${hasBbps ? `startUtilityConfig('${u.label}')` : `addManualUtility('${u.label}')`}">
+            <div style="font-size: 16px; width: 24px; text-align: center;">${u.icon}</div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #3a3834;">${u.label}</div>
+              <div style="font-size: 9px; color: #9a958f; margin-top: 1px;">${hasBbps ? 'Connect via BBPS' : 'Manual tracking'}</div>
+            </div>
+            <div style="font-size: 11px; color: #A8432E; font-weight: 500;">+ Add</div>
+          </div>
+        `}).join('')}
+      </div>
+    ` : ''}
+
+    <button class="form-save-btn" onclick="saveEditUtilities()" style="margin-top: 14px;">Done</button>
+  `;
+}
+
+function renderProviderPicker(body) {
+  const providers = utilityProviders[utilityConfigType] || [];
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+      <button onclick="utilityConfigStep = 'list'; renderEditUtilities();" style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b6660;">${iconSvg('back', 14, '#6b6660')}</button>
+      <div>
+        <div style="font-size: 18px; font-weight: 500;">Select provider</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">${utilityConfigType}</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <input type="text" class="text-input" placeholder="Search providers..." style="margin-bottom: 12px;" />
+    </div>
+
+    <div style="background: white; border-radius: 14px; padding: 2px 14px;">
+      ${providers.map(p => `
+        <button onclick="selectProvider('${p.name.replace(/'/g, "\\'")}')" style="width: 100%; padding: 14px 0; display: flex; align-items: center; justify-content: space-between; border-top: 0.5px solid rgba(0,0,0,0.06); text-align: left;">
+          <div>
+            <div style="font-size: 13px; font-weight: 500;">${p.name}</div>
+            <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">${p.region}</div>
+          </div>
+          ${iconSvg('chevron', 14, '#9a958f')}
+        </button>
+      `).join('')}
+    </div>
+
+    <div style="text-align: center; margin-top: 16px;">
+      <button onclick="selectProvider('Other')" style="font-size: 12px; color: #6b6660;">Provider not listed? <span style="color: #A8432E; font-weight: 500;">Add manually</span></button>
+    </div>
+  `;
+}
+
+function renderConsumerInput(body) {
+  const info = consumerLabels[utilityConfigType] || { label: 'Account number', placeholder: 'Enter your ID', hint: 'Found on your bill' };
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+      <button onclick="utilityConfigStep = 'provider'; renderEditUtilities();" style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b6660;">${iconSvg('back', 14, '#6b6660')}</button>
+      <div>
+        <div style="font-size: 18px; font-weight: 500;">Connect ${utilityConfigType}</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">${utilityConfigProvider}</div>
+      </div>
+    </div>
+
+    <div style="background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+      <div class="field-label">${info.label}</div>
+      <input type="text" class="text-input dark-border" placeholder="${info.placeholder}" style="font-size: 15px; letter-spacing: 0.5px; margin-bottom: 8px;" />
+      <div style="font-size: 10px; color: #9a958f; line-height: 1.4;">${info.hint}</div>
+    </div>
+
+    <div style="padding: 12px 14px; background: rgba(168,67,46,0.06); border-radius: 12px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px;">
+      ${iconSvg('shield', 14, '#A8432E')}
+      <div style="font-size: 10px; color: #3a3834; line-height: 1.5;">
+        We fetch your bill amount and due date via <strong>BBPS</strong> (Bharat Bill Payment System). Your credentials are never stored. Auto-pay can be set up later.
+      </div>
+    </div>
+
+    <button class="form-save-btn" onclick="confirmUtilityConnect()">Fetch & connect →</button>
+
+    <div style="text-align: center; margin-top: 14px;">
+      <button onclick="skipToBbpsConnect()" style="font-size: 11px; color: #6b6660;">Don't have the number? <span style="color: #A8432E; font-weight: 500;">Scan your bill</span></button>
+    </div>
+  `;
+}
+
+function startUtilityConfig(type) {
+  utilityConfigType = type;
+  utilityConfigStep = 'provider';
+  renderEditUtilities();
+}
+
+function selectProvider(name) {
+  utilityConfigProvider = name;
+  utilityConfigStep = 'consumer';
+  renderEditUtilities();
+}
+
+function addManualUtility(label) {
+  utilityToggles[label] = true;
+  showToast(`${label} added · manual tracking`);
+  renderEditUtilities();
+}
+
+function confirmUtilityConnect() {
+  utilityToggles[utilityConfigType] = true;
+  utilityConfigStep = 'list';
+  closeFormSheet('editUtilities');
+  showToast(`✓ ${utilityConfigType} connected via ${utilityConfigProvider} · BBPS`);
+}
+
+function skipToBbpsConnect() {
+  showToast('Opening camera to scan bill...');
+  setTimeout(() => confirmUtilityConnect(), 1500);
+}
+
+function toggleUtility(label, on) {
+  if (!on) {
+    utilityToggles[label] = false;
+    showToast(`${label} disabled · won't track`);
+  } else {
+    utilityToggles[label] = true;
+  }
+  renderEditUtilities();
+}
+
+function saveEditUtilities() {
+  closeFormSheet('editUtilities');
+  showToast('✓ Utilities updated');
+}
+
 /* ============ PRE-SCAN SHEET (Appliance / Electronics / Other) ============ */
 let preScanCategory = null;
+
+/* ============ REMINDER ACTION FLOW (Mark done / Snooze / Skip) ============ */
+let reminderActionState = null; // { title, sub, chip, assetId, assignee, step: 'choose' | 'log' }
+
+function openReminderAction(reminder) {
+  reminderActionState = { ...reminder, step: 'choose' };
+  document.getElementById('reminderAction-backdrop').classList.add('active');
+  document.getElementById('reminderAction-sheet').classList.add('active');
+  renderReminderAction();
+}
+
+function renderReminderAction() {
+  const body = document.getElementById('reminderAction-form-body');
+  if (!body || !reminderActionState) return;
+  const r = reminderActionState;
+  const assigneeM = r.assignee ? getMemberById(r.assignee) : null;
+
+  if (r.step === 'choose') {
+    body.innerHTML = `
+      <div style="margin-bottom: 18px;">
+        <div style="font-size: 16px; font-weight: 500; letter-spacing: -0.2px;">${r.title}</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+          <span>${r.sub}</span>
+          ${assigneeM ? `<span>·</span>
+            <div style="display: inline-flex; align-items: center; gap: 3px;">
+              <div style="width: 14px; height: 14px; border-radius: 50%; background: ${assigneeM.self ? '#1a1a1a' : '#A8432E'}; color: white; font-size: 6px; display: flex; align-items: center; justify-content: center; font-weight: 500;">${assigneeM.initial}</div>
+              <span>${assigneeM.short}</span>
+            </div>` : ''}
+        </div>
+      </div>
+
+      <button onclick="reminderActionState.step = 'log'; renderReminderAction();" style="width: 100%; padding: 14px; border-radius: 12px; background: #1a1a1a; color: white; font-size: 13px; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Mark as done
+      </button>
+
+      <button onclick="snoozeReminder()" style="width: 100%; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.04); font-size: 13px; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        ${iconSvg('clock', 14, '#1a1a1a')}
+        Snooze · 7 days
+      </button>
+
+      <button onclick="skipReminder()" style="width: 100%; padding: 14px; border-radius: 12px; background: transparent; font-size: 13px; color: #6b6660; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        Skip this one
+      </button>
+    `;
+    return;
+  }
+
+  // step === 'log' — quick completion log
+  const today = new Date().toISOString().slice(0, 10);
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+      <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(45,138,78,0.15); display: flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f6638" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 16px; font-weight: 500; color: #1f6638;">Done!</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">${r.title} · ${r.sub}</div>
+      </div>
+    </div>
+
+    <div class="field-label">When?</div>
+    <input type="date" class="text-input" value="${today}" style="margin-bottom: 14px;" />
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+      <div>
+        <div class="field-label">Cost (optional)</div>
+        <input type="number" class="text-input" placeholder="₹" />
+      </div>
+      <div>
+        <div class="field-label">Done by</div>
+        <div style="display: flex; gap: 4px; margin-top: 6px;">
+          ${getActiveMembers().slice(0, 4).map(m => `
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: ${m.id === (r.assignee || 'khushwant') ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; color: ${m.id === (r.assignee || 'khushwant') ? 'white' : '#1a1a1a'}; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 500; cursor: pointer;">${m.initial}</div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="field-label">Note (optional)</div>
+    <input type="text" class="text-input" placeholder="e.g. Used OEM filter" style="margin-bottom: 4px;" />
+
+    <button onclick="completeReminder()" class="form-save-btn" style="margin-top: 14px;">Save to service history →</button>
+
+    <div style="text-align: center; margin-top: 10px;">
+      <button onclick="reminderActionState.step = 'choose'; renderReminderAction();" style="font-size: 11px; color: #6b6660;">← Back</button>
+    </div>
+  `;
+}
+
+function snoozeReminder() {
+  closeFormSheet('reminderAction');
+  showToast(`Snoozed 7 days · ${reminderActionState.title}`);
+  reminderActionState = null;
+}
+
+function skipReminder() {
+  closeFormSheet('reminderAction');
+  showToast(`Skipped · next occurrence in 3 months`);
+  reminderActionState = null;
+}
+
+function completeReminder() {
+  closeFormSheet('reminderAction');
+  const r = reminderActionState;
+  const assigneeM = r.assignee ? getMemberById(r.assignee) : null;
+  const who = assigneeM ? assigneeM.short : 'You';
+  showToast(`✓ ${r.title} done by ${who} · logged to service history`);
+  reminderActionState = null;
+}
 
 function openPreScan(category) {
   preScanCategory = category;
@@ -4153,9 +4648,6 @@ function renderMemberProfile(memberId) {
       ${thingsHtml}
       ${moneyHtml}
       ${docsHtml}
-      <div style="padding: 24px 16px 0;">
-        <button class="primary-cta" onclick="openAiAskMember('${m.id}')">${iconSvg('sparkle', 14, 'white')} Ask about ${m.short}</button>
-      </div>
       <div style="height: 20px;"></div>
     </div>
   `;
@@ -4199,556 +4691,456 @@ function obHeader(options) {
   `;
 }
 
-// 1. THE PROMISE
+// ============ ONBOARDING — 16 screens ============
+
+// ============ ONBOARDING — 16 screens (final) ============
+
+// 1. PROMISE
 function renderOnboardingIntro() {
   const scr = document.getElementById('screen-onboarding-intro');
   if (!scr) return;
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    <div class="screen-scroll">
-      <div style="padding: 26px 24px 0; text-align: center;">
-        <div style="font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500;">1 · THE PROMISE</div>
-      </div>
-      <div style="padding: 48px 28px 0;">
-        <div style="font-size: 42px; font-weight: 500; letter-spacing: -1.2px; line-height: 1;">KKOSH</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 8px;">Ownership. Organised.</div>
-        <div style="margin-top: 48px; font-size: 22px; font-weight: 500; line-height: 1.3; letter-spacing: -0.3px; color: #1a1a1a;">
-          Your home runs on things.<br>They have dates, dues,<br>and documents.
-        </div>
-        <div style="margin-top: 18px; font-size: 13px; color: #6b6660; line-height: 1.5;">
-          We keep them in one quiet place. Starting with your car — in 10 seconds.
-        </div>
-      </div>
-      <div style="padding: 40px 24px 0;">
-        <button class="primary-cta" onclick="goTo('ob-gate')">Show me →</button>
-        <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 14px;">30 seconds to set up</div>
-      </div>
+  scr.innerHTML = `<div class="status-bar"></div><div class="screen-scroll">
+    <div style="padding: 80px 28px 0;">
+      <div style="font-size: 42px; font-weight: 500; letter-spacing: -1.2px;">KKOSH</div>
+      <div style="font-size: 13px; color: #A8432E; margin-top: 8px; letter-spacing: 0.3px;">Ownership. Organised.</div>
+      <div style="margin-top: 56px; font-size: 24px; font-weight: 500; line-height: 1.35; letter-spacing: -0.3px;">Your home runs on things.<br>They have dates, dues,<br>and documents.</div>
+      <div style="margin-top: 16px; font-size: 14px; color: #6b6660; line-height: 1.6;">We keep them in one quiet place.<br>Starting with your car — in 10 seconds.</div>
     </div>
-  `;
+    <div style="padding: 48px 24px 0;">
+      <button class="primary-cta" onclick="goTo('ob-phone')">Show me →</button>
+      <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 16px;">30 seconds to set up</div>
+    </div></div>`;
 }
 
-// 2. THE GATE — name, household, phone
-function renderObGate() {
-  const scr = document.getElementById('screen-ob-gate');
+// 2. PHONE
+function renderObPhone() {
+  const scr = document.getElementById('screen-ob-phone');
   if (!scr) return;
-  const valid = true; // Validation disabled for demo
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 1, total: 5, stepLabel: '2 · THE GATE', backTo: 'onboarding-intro' })}
-    <div class="screen-scroll">
-      <div style="padding: 12px 24px 0;">
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">First, let's get you in.</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">30 seconds. No email, no passwords.</div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">YOUR NAME</div>
-        <input type="text" class="text-input" placeholder="Khushwant" value="${obState.name}" oninput="obState.name = this.value; renderObGate()" style="margin-bottom: 18px;" />
-
-        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">HOUSEHOLD NAME</div>
-        <input type="text" class="text-input" placeholder="Sharma" value="${obState.household}" oninput="obState.household = this.value; renderObGate()" style="margin-bottom: 6px;" />
-        <div style="font-size: 10px; color: #9a958f; margin-bottom: 18px;">Usually your family surname</div>
-
-        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">PHONE NUMBER</div>
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <div style="padding: 12px 14px; border-radius: 10px; background: #F7F1E8; border: 1px solid rgba(0,0,0,0.08); font-size: 13px; color: #1a1a1a;">+91</div>
-          <input type="tel" class="text-input" placeholder="98 ·· ·· 3217" value="${obState.phone}" oninput="obState.phone = this.value; renderObGate()" style="flex: 1;" />
-        </div>
-        <div style="font-size: 10px; color: #9a958f; margin-bottom: 24px;">We'll send a 6-digit code</div>
-
-        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-otp')" : ''}" style="margin-top: 0;">Send verification code →</button>
-
-        <div style="text-align: center; font-size: 10px; color: #9a958f; margin-top: 14px; line-height: 1.5;">
-          By continuing you agree to Terms & Privacy.<br>Your data never leaves India.
-        </div>
-      </div>
+  scr.innerHTML = `<div class="status-bar"></div>
+    <div style="padding: 14px 20px 0;"><button class="back-btn" onclick="goTo('onboarding-intro')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button></div>
+    <div class="screen-scroll"><div style="padding: 24px 24px 0;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">First, let's get you in.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">30 seconds. No email, no passwords.</div>
     </div>
-  `;
+    <div style="padding: 36px 24px 0;">
+      <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">PHONE NUMBER</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <div style="padding: 14px 16px; border-radius: 12px; background: #F7F1E8; border: 1px solid rgba(0,0,0,0.06); font-size: 15px; font-weight: 500;">+91</div>
+        <input type="tel" class="text-input" placeholder="98···3217" value="${obState.phone}" oninput="obState.phone = this.value" style="flex: 1; font-size: 17px; font-weight: 500; letter-spacing: 1px; padding: 14px;" />
+      </div>
+      <div style="font-size: 11px; color: #9a958f; margin-bottom: 36px;">We'll send a 6-digit code to verify</div>
+      <button class="form-save-btn" onclick="goTo('ob-otp')">Send verification code →</button>
+      <div style="text-align: center; font-size: 10px; color: #9a958f; margin-top: 20px; line-height: 1.6;">By continuing you agree to Terms & Privacy.<br>Your data never leaves India.</div>
+    </div></div>`;
 }
 
 // 3. OTP
 function renderObOtp() {
   const scr = document.getElementById('screen-ob-otp');
   if (!scr) return;
-  const lastFour = obState.phone.replace(/\D/g, '').slice(-4);
-  const maskedPhone = lastFour ? `+91 98··· ${lastFour}` : '+91 98···3217';
-  const otpFilled = obState.otp.filter(d => d !== '').length;
-  const valid = true; // Validation disabled for demo
-  const boxes = [0,1,2,3,4,5].map(i => `
-    <input type="text" inputmode="numeric" maxlength="1" id="otp-${i}"
-      value="${obState.otp[i]}"
-      oninput="handleOtpInput(${i}, this.value)"
-      onkeydown="handleOtpKeydown(${i}, event)"
-      style="width: 44px; height: 52px; text-align: center; font-size: 20px; font-weight: 500; border-radius: 10px; background: ${obState.otp[i] ? '#ffffff' : '#F7F1E8'}; border: 1.5px solid ${obState.otp[i] ? '#1a1a1a' : 'rgba(0,0,0,0.08)'}; color: #1a1a1a; outline: none;" />
-  `).join('');
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 1, total: 5, stepLabel: '3 · OTP VERIFICATION', backTo: 'ob-gate' })}
-    <div class="screen-scroll">
-      <div style="padding: 12px 24px 0;">
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Enter the 6-digit code.</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">We sent it to ${maskedPhone}. <button onclick="goTo('ob-gate')" style="color: #1a1a1a; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; font-weight: 500; font-size: 13px;">Change number.</button></div>
-      </div>
-
-      <div style="padding: 28px 24px 0; display: flex; justify-content: center; gap: 8px;">
-        ${boxes}
-      </div>
-
-      <div style="text-align: center; padding: 18px 0 0; font-size: 11px; color: #6b6660;">Resend code in <span id="otp-timer">0:24</span></div>
-
-      <div style="padding: 28px 24px 0;">
-        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-vehicle')" : ''}" style="margin-top: 0;">Verify & continue →</button>
-        <div style="text-align: center; font-size: 10px; color: #9a958f; margin-top: 14px;">Code auto-detected from SMS</div>
-      </div>
+  const l4 = obState.phone.replace(/\D/g, '').slice(-4) || '3217';
+  const bx = [0,1,2,3,4,5].map(i => `<input type="text" inputmode="numeric" maxlength="1" id="otp-${i}" value="${obState.otp[i]}" oninput="handleOtpInput(${i}, this.value)" onkeydown="handleOtpKeydown(${i}, event)" style="width: 46px; height: 56px; text-align: center; font-size: 22px; font-weight: 500; border-radius: 12px; background: ${obState.otp[i] ? '#fff' : '#F7F1E8'}; border: 1.5px solid ${obState.otp[i] ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; outline: none;" />`).join('');
+  scr.innerHTML = `<div class="status-bar"></div>
+    <div style="padding: 14px 20px 0;"><button class="back-btn" onclick="goTo('ob-phone')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button></div>
+    <div class="screen-scroll"><div style="padding: 24px 24px 0;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Enter the 6-digit code.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">We sent it to +91 98···${l4}. <button onclick="goTo('ob-phone')" style="color: #1a1a1a; font-weight: 500; font-size: 14px;">Change number.</button></div>
     </div>
-  `;
-  // Auto-focus first empty box
-  setTimeout(() => {
-    const firstEmpty = obState.otp.findIndex(d => d === '');
-    const idx = firstEmpty === -1 ? 5 : firstEmpty;
-    const el = document.getElementById('otp-' + idx);
-    if (el) el.focus();
-  }, 50);
+    <div style="padding: 32px 24px 0; display: flex; justify-content: center; gap: 8px;">${bx}</div>
+    <div style="text-align: center; padding: 20px 0 0; font-size: 11px; color: #9a958f;">Resend code in 0:24</div>
+    <div style="padding: 32px 24px 0;">
+      <button class="form-save-btn" onclick="goTo('ob-name')">Verify & continue →</button>
+      <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 16px;">Code auto-detected from SMS</div>
+    </div></div>`;
+  setTimeout(() => { const el = document.getElementById('otp-0'); if (el) el.focus(); }, 50);
 }
 
-function handleOtpInput(i, val) {
-  // Keep only last digit
-  const digit = (val || '').replace(/\D/g, '').slice(-1);
-  obState.otp[i] = digit;
-  if (digit && i < 5) {
-    const next = document.getElementById('otp-' + (i + 1));
-    if (next) next.focus();
-  }
-  renderObOtp();
-}
-function handleOtpKeydown(i, e) {
-  if (e.key === 'Backspace' && !obState.otp[i] && i > 0) {
-    const prev = document.getElementById('otp-' + (i - 1));
-    if (prev) prev.focus();
-  }
+// 4. NAME
+function renderObName() {
+  const scr = document.getElementById('screen-ob-name');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>
+    <div style="padding: 14px 20px 0;"><button class="back-btn" onclick="goTo('ob-otp')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button></div>
+    <div class="screen-scroll"><div style="padding: 24px 24px 0;">
+      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(45,138,78,0.08); border-radius: 12px; margin-bottom: 16px;"><div style="width: 5px; height: 5px; border-radius: 50%; background: #1f6638;"></div><div style="font-size: 11px; color: #1f6638; font-weight: 500;">Phone verified</div></div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">What should we call you?</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">This is how your household will appear.</div>
+    </div>
+    <div style="padding: 32px 24px 0;">
+      <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">YOUR NAME</div>
+      <input type="text" class="text-input" placeholder="Khushwant" value="${obState.name}" oninput="obState.name = this.value" style="font-size: 17px; padding: 14px; margin-bottom: 24px;" />
+      <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">HOUSEHOLD NAME</div>
+      <input type="text" class="text-input" placeholder="Sharma" value="${obState.household}" oninput="obState.household = this.value" style="font-size: 17px; padding: 14px; margin-bottom: 6px;" />
+      <div style="font-size: 11px; color: #9a958f; margin-bottom: 36px;">Usually your family surname</div>
+      <button class="form-save-btn" onclick="goTo('ob-vehicle')">Continue →</button>
+    </div></div>`;
 }
 
-// 4. VEHICLE ADD
+// 5. VEHICLE — personalized, no photo RC
 function renderObVehicle() {
   const scr = document.getElementById('screen-ob-vehicle');
   if (!scr) return;
-  const cleanVrn = obState.vrn.replace(/\s/g, '').toUpperCase();
-  const valid = true; // Validation disabled for demo
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 1, total: 5, stepLabel: '4 · VEHICLE ADD (1 of 5)', backTo: 'ob-otp' })}
-    <div class="screen-scroll">
-      <div style="padding: 4px 24px 0;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
-          <span>🟢</span> FIRST · THE FAST PATH
-        </div>
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Add your first vehicle.</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
-          Just the registration number. We pull everything from Parivahan — owner, insurance, challans, PUC.
-        </div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">YOUR VEHICLE'S RC NUMBER</div>
-        <input type="text" class="text-input dark-border" placeholder="DL 3C AB 1234"
-          value="${obState.vrn}"
-          oninput="obState.vrn = this.value.toUpperCase(); renderObVehicle()"
-          style="font-size: 18px; font-weight: 500; letter-spacing: 1.5px; text-align: center; padding: 16px;" />
-
-        <div style="margin-top: 12px; padding: 12px 14px; background: rgba(168,67,46,0.06); border: 1px dashed rgba(168,67,46,0.3); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
-          <div style="font-size: 14px;">📸</div>
-          <div style="font-size: 12px; color: #A8432E; font-weight: 500;">Can't remember? Photo the RC book</div>
-        </div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <button class="form-save-btn ${valid ? '' : 'disabled'}" onclick="${valid ? "goTo('ob-wow')" : ''}" style="margin-top: 0;">Pull vehicle details →</button>
-        <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px; justify-content: center;">
-          ${iconSvg('shield', 11, '#6b6660')}
-          <div style="font-size: 10px; color: #6b6660;">Verified through Parivahan · Use only your own vehicle</div>
-        </div>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center;">
-        <button onclick="goTo('ob-home')" style="font-size: 11px; color: #6b6660; text-decoration: underline; text-decoration-color: rgba(0,0,0,0.15); text-underline-offset: 3px;">I don't own a vehicle · Done for now</button>
-      </div>
+  const un = obState.name || 'Khushwant';
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 1, total: 5, backTo: 'ob-name' })}
+    <div class="screen-scroll"><div style="padding: 8px 24px 0;">
+      <div style="font-size: 11px; color: #A8432E; letter-spacing: 0.3px; font-weight: 500; margin-bottom: 12px;">1 of 5 · Your vehicle</div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">${un}, let's start with<br>your vehicle.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.6;">Enter the registration number. We'll fetch insurance, challans, PUC, and fitness — all in one go.</div>
     </div>
-  `;
+    <div style="padding: 32px 24px 0;">
+      <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">REGISTRATION NUMBER</div>
+      <input type="text" class="text-input dark-border" placeholder="DL 3C AB 1234" value="${obState.vrn}" oninput="obState.vrn = this.value.toUpperCase()" style="font-size: 20px; font-weight: 500; letter-spacing: 2px; text-align: center; padding: 18px;" />
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 14px; justify-content: center;">${iconSvg('shield', 11, '#9a958f')}<div style="font-size: 10px; color: #9a958f;">Verified via Parivahan · Use only your own vehicle</div></div>
+    </div>
+    <div style="padding: 36px 24px 0;">
+      <button class="form-save-btn" onclick="goTo('ob-validate')">Fetch details →</button>
+    </div>
+    <div style="padding: 28px 24px 0; text-align: center;"><button onclick="goTo('ob-home')" style="font-size: 12px; color: #6b6660;">I don't own a vehicle · <span style="color: #1a1a1a; font-weight: 500;">Skip</span></button></div></div>`;
 }
 
-// 5. WOW MOMENT
+// 6. VEHICLE VALIDATION — Parivahan data shown, user confirms. Smart finds called out.
+function renderObValidate() {
+  const scr = document.getElementById('screen-ob-validate');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 1, total: 5, backTo: 'ob-vehicle' })}
+    <div class="screen-scroll">
+    <div style="margin: 0 20px 16px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">${iconSvg('check', 14, '#1f6638')}<div style="font-size: 12px; color: #1f6638; font-weight: 500;">Found on Parivahan in 2 seconds</div></div>
+
+    <div style="padding: 0 24px;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Is this yours?</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">We found this vehicle. Confirm to add it to your KKOSH.</div>
+    </div>
+
+    <div style="margin: 28px 20px 0; background: white; border-radius: 16px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden;">${brandLogo('honda', 48)}</div>
+        <div>
+          <div style="font-size: 18px; font-weight: 500;">Honda City</div>
+          <div style="font-size: 12px; color: #6b6660; margin-top: 3px;">ZX CVT · Modern Steel · Petrol</div>
+        </div>
+      </div>
+      <div style="padding: 14px 0 0;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px;"><span style="color: #6b6660;">Owner</span><span style="font-weight: 500;">Rajinder Sharma</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-top: 0.5px solid rgba(0,0,0,0.06);"><span style="color: #6b6660;">Registered</span><span style="font-weight: 500;">2021</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-top: 0.5px solid rgba(0,0,0,0.06);"><span style="color: #6b6660;">RC number</span><span style="font-weight: 500;">DL 3C AB 1234</span></div>
+      </div>
+    </div>
+
+    <div style="margin: 12px 20px 0; background: rgba(200,135,13,0.08); border-radius: 12px; padding: 14px;">
+      <div style="font-size: 10px; letter-spacing: 0.4px; color: #8a5d09; font-weight: 500; margin-bottom: 8px;">SMART FINDS</div>
+      <div style="font-size: 12px; color: #3a3834; line-height: 1.8;">
+        <span style="color: #B5341F;">●</span> PUC expired · 4 days ago<br>
+        <span style="color: #C8870D;">●</span> 2 challans pending · ₹1,500<br>
+        <span style="color: #1f6638;">●</span> Insurance valid until Aug 2026<br>
+        <span style="color: #1f6638;">●</span> Fitness valid · Road tax paid
+      </div>
+    </div>
+
+    <div style="padding: 28px 24px 0;">
+      <button class="form-save-btn" onclick="goTo('ob-wow')">Yes, this is mine →</button>
+      <div style="text-align: center; margin-top: 14px;"><button onclick="goTo('ob-vehicle')" style="font-size: 12px; color: #6b6660;">Not mine · <span style="color: #1a1a1a; font-weight: 500;">Try another</span></button></div>
+    </div></div>`;
+}
+
+// 7. WOW — pay challan option
 function renderObWow() {
   const scr = document.getElementById('screen-ob-wow');
   if (!scr) return;
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 1, total: 5, stepLabel: '5 · THE WOW MOMENT', backTo: 'ob-vehicle' })}
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 1, total: 5, backTo: 'ob-validate' })}
     <div class="screen-scroll">
-      <div style="margin: 0 16px 16px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-        ${iconSvg('check', 14, '#1f6638')}
-        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">Found on Parivahan in 2 seconds</div>
+
+    <div style="margin: 0 20px; background: white; border-radius: 16px; overflow: hidden;">
+      <div style="padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.04);">
+        <div style="width: 40px; height: 40px; border-radius: 12px; overflow: hidden;">${brandLogo('honda', 40)}</div>
+        <div><div style="font-size: 16px; font-weight: 500;">Honda City</div><div style="font-size: 12px; color: #6b6660; margin-top: 2px;">2021 · Rajinder Sharma</div></div>
+        <div style="margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
       </div>
-
-      <div style="margin: 0 16px; background: white; border-radius: 16px; overflow: hidden;">
-        <div style="padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.05);">
-          <div style="width: 40px; height: 40px; border-radius: 12px; overflow: hidden;">${brandLogo('honda', 40)}</div>
-          <div>
-            <div style="font-size: 16px; font-weight: 500;">Honda City</div>
-            <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">2021 · Modern Steel · ZX CVT</div>
-            <div style="font-size: 10px; color: #9a958f; margin-top: 2px;">Registered to Rajinder Sharma</div>
-          </div>
-        </div>
-
-        <div style="padding: 14px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.05);">
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #8a5d09; font-weight: 500; margin-bottom: 8px;">⚠ NEEDS YOUR ATTENTION</div>
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px;">
-            <div style="width: 5px; height: 5px; border-radius: 50%; background: #B5341F;"></div>
-            <span style="color: #8a2818; font-weight: 500;">PUC expired</span>
-            <span style="color: #6b6660;">· 4 days ago</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
-            <div style="width: 5px; height: 5px; border-radius: 50%; background: #C8870D;"></div>
-            <span style="color: #8a5d09; font-weight: 500;">2 challans pending</span>
-            <span style="color: #6b6660;">· ₹1,500</span>
-          </div>
-        </div>
-
-        <div style="padding: 14px 16px;">
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #1f6638; font-weight: 500; margin-bottom: 8px;">✓ ALSO TRACKED</div>
-          <div style="font-size: 11px; color: #3a3834; line-height: 1.6;">
-            Insurance valid until 18 Aug 2026<br>
-            Fitness valid until 2038 · Road tax paid
-          </div>
-        </div>
+      <div style="padding: 14px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px;"><div style="width: 5px; height: 5px; border-radius: 50%; background: #B5341F;"></div><span style="color: #8a2818; font-weight: 500;">PUC expired</span><span style="color: #9a958f;">· 4 days ago</span></div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;"><div style="width: 5px; height: 5px; border-radius: 50%; background: #C8870D;"></div><span style="color: #8a5d09; font-weight: 500;">2 challans pending</span><span style="color: #9a958f;">· ₹1,500</span></div>
       </div>
-
-      <div style="margin: 16px 16px 0; background: rgba(181,52,31,0.08); border-radius: 14px; padding: 16px;">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-          <div style="font-size: 11px;">⚡</div>
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #8a2818; font-weight: 500;">FAST PATH</div>
-        </div>
-        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">Clear both in 10 seconds</div>
-        <div style="font-size: 11px; color: #6b6660; margin-top: 4px;">Pay ₹1,500 challan · renew PUC ₹500</div>
-        <button onclick="openPaySheet({ assetId: 'honda-city', label: 'Challan + PUC', detail: 'Honda City · Fast path', amount: 2000 })" style="margin-top: 12px; width: 100%; padding: 12px; border-radius: 12px; background: #B5341F; color: white; font-size: 13px; font-weight: 500;">Fix now · ₹2,000 →</button>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center;">
-        <button onclick="goTo('ob-home')" style="font-size: 12px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Save & continue without fixing →</button>
+      <div style="padding: 14px 16px;">
+        <div style="font-size: 12px; color: #3a3834; line-height: 1.7;"><span style="color: #1f6638;">✓</span> Insurance · Aug 2026 &nbsp; <span style="color: #1f6638;">✓</span> Fitness &nbsp; <span style="color: #1f6638;">✓</span> Road tax</div>
       </div>
     </div>
-  `;
+
+    <div style="margin: 16px 20px 0; background: rgba(181,52,31,0.06); border-radius: 14px; padding: 18px;">
+      <div style="font-size: 15px; font-weight: 500;">Clear both in 10 seconds</div>
+      <div style="font-size: 12px; color: #6b6660; margin-top: 4px;">Pay ₹1,500 challan + renew PUC ₹500</div>
+      <button onclick="openPaySheet({ assetId: 'honda-city', label: 'Challan + PUC', detail: 'Honda City', amount: 2000 })" style="margin-top: 14px; width: 100%; padding: 14px; border-radius: 12px; background: #B5341F; color: white; font-size: 13px; font-weight: 500;">Fix now · ₹2,000 →</button>
+    </div>
+
+    <div style="padding: 24px 24px 0; text-align: center;"><button onclick="goTo('ob-celebrate')" style="font-size: 13px; color: #1a1a1a; font-weight: 500;">Save & continue →</button></div></div>`;
 }
 
-// 6. HOME ADD
+// 8. CELEBRATE 🎉
+function renderObCelebrate() {
+  const scr = document.getElementById('screen-ob-celebrate');
+  if (!scr) return;
+  const un = obState.name || 'Khushwant';
+  scr.innerHTML = `<div class="status-bar"></div><div class="screen-scroll">
+    <div style="padding: 72px 24px 0; text-align: center;">
+      <div style="font-size: 56px;">🎉</div>
+      <div style="font-size: 28px; font-weight: 500; letter-spacing: -0.5px; margin-top: 24px;">Your first card.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.5;">${un}, your Honda City is now in your KKOSH.</div>
+    </div>
+    <div style="margin: 36px 20px 0; background: white; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden;">${brandLogo('honda', 48)}</div>
+      <div style="flex: 1;"><div style="font-size: 15px; font-weight: 500;">Honda City</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">2021 · Rajinder Sharma</div></div>
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div style="margin: 14px 20px 0; background: rgba(0,0,0,0.03); border-radius: 14px; padding: 16px;">
+      <div style="font-size: 10px; letter-spacing: 0.5px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">WE'RE NOW TRACKING</div>
+      <div style="font-size: 12px; color: #3a3834; line-height: 2;">✓ Insurance expiry · 18 Aug 2026<br>✓ PUC status · expired<br>✓ 2 challans · ₹1,500<br>✓ Fitness · Road tax · RC</div>
+    </div>
+    <div style="padding: 36px 24px 0;">
+      <button class="primary-cta" onclick="goTo('ob-home')">Next · add your home →</button>
+      <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 16px;">4 more steps</div>
+    </div></div>`;
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+}
+
+// 9. PROPERTY — electricity bill, well-spaced
 function renderObHome() {
   const scr = document.getElementById('screen-ob-home');
   if (!scr) return;
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 2, total: 5, stepLabel: '6 · HOME ADD (2 of 5)', backTo: 'ob-wow' })}
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 2, total: 5, backTo: 'ob-celebrate' })}
     <div class="screen-scroll">
-      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-        ${iconSvg('check', 14, '#1f6638')}
-        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">Honda City saved to your KKOSH</div>
-      </div>
+    <div style="margin: 0 20px 20px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">${iconSvg('check', 14, '#1f6638')}<div style="font-size: 12px; color: #1f6638; font-weight: 500;">1 thing in your KKOSH</div></div>
 
-      <div style="padding: 4px 24px 0;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
-          <span>🏡</span> NEXT · YOUR HOME
-        </div>
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Where does your family live?</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
-          We'll track property tax, society dues, electricity, and help you during registration or sale.
-        </div>
-      </div>
-
-      <div style="padding: 22px 16px 0;">
-        <div style="background: white; border-radius: 14px; padding: 14px;">
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 12px;">SCAN ONE DOCUMENT</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(168,67,46,0.08); border: 1.5px solid #A8432E; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-              <div style="font-size: 22px;">📄</div>
-              <div style="font-size: 11px; font-weight: 500; color: #1a1a1a;">Electricity bill</div>
-              <div style="font-size: 9px; color: #A8432E; font-weight: 500;">Fastest</div>
-            </button>
-            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(0,0,0,0.03); border: 1px solid transparent; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-              <div style="font-size: 22px;">📜</div>
-              <div style="font-size: 11px; font-weight: 500;">Sale deed</div>
-              <div style="font-size: 9px; color: #6b6660;">If you own</div>
-            </button>
-            <button onclick="goTo('ob-electronics')" style="padding: 14px 6px; background: rgba(0,0,0,0.03); border: 1px solid transparent; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-              <div style="font-size: 22px;">📋</div>
-              <div style="font-size: 11px; font-weight: 500;">Rent agreement</div>
-              <div style="font-size: 9px; color: #6b6660;">If you rent</div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <button class="form-save-btn" onclick="goTo('ob-electronics')" style="margin-top: 0;">Scan electricity bill →</button>
-        <div style="text-align: center; margin-top: 14px;">
-          <button onclick="goTo('ob-electronics')" style="font-size: 12px; color: #6b6660;">Prefer to type it? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
-        </div>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
-        <button onclick="goTo('ob-electronics')" style="font-size: 11px; color: #6b6660; padding: 12px;">No home to add · Done for now</button>
-      </div>
+    <div style="padding: 0 24px 0;">
+      <div style="font-size: 11px; color: #A8432E; letter-spacing: 0.3px; font-weight: 500; margin-bottom: 12px;">2 of 5 · Your home</div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Where does your<br>family live?</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.6;">We track property tax, society dues, electricity, and help during registration or sale.</div>
     </div>
-  `;
+
+    <div style="padding: 36px 20px 0;">
+      <button onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="width: 100%; padding: 20px; background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; display: flex; align-items: center; gap: 16px; text-align: left;">
+        <div style="font-size: 32px;">📄</div>
+        <div style="flex: 1;">
+          <div style="font-size: 16px; font-weight: 500;">Scan your electricity bill</div>
+          <div style="font-size: 12px; color: #6b6660; margin-top: 6px; line-height: 1.4;">We auto-detect address, account number, and provider</div>
+        </div>
+        ${iconSvg('chevron', 16, '#9a958f')}
+      </button>
+    </div>
+
+    <div style="padding: 28px 24px 0;">
+      <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })">Scan electricity bill →</button>
+    </div>
+
+    <div style="padding: 20px 24px 0; text-align: center;"><button onclick="goTo('ob-home-saved')" style="font-size: 13px; color: #6b6660;">Prefer to type? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+
+    <div style="padding: 20px 24px 0; text-align: center;"><button onclick="goTo('ob-electronics')" style="font-size: 12px; color: #9a958f;">No home to add · Skip</button></div>
+    </div>`;
 }
 
-// 7. ELECTRONICS
+// 10. PROPERTY SAVED
+function renderObHomeSaved() {
+  const scr = document.getElementById('screen-ob-home-saved');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 2, total: 5, backTo: 'ob-home' })}
+    <div class="screen-scroll">
+    <div style="padding: 56px 24px 0; text-align: center;">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(45,138,78,0.12); display: inline-flex; align-items: center; justify-content: center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1f6638" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="font-size: 24px; font-weight: 500; margin-top: 20px;">Property saved.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">2 things in your KKOSH.</div>
+    </div>
+    <div style="margin: 36px 20px 0; background: white; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #F7F1E8; display: flex; align-items: center; justify-content: center; font-size: 20px;">🏠</div>
+      <div style="flex: 1;"><div style="font-size: 15px; font-weight: 500;">Woodstock 15 SF</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">South City 2 · Gurugram</div></div>
+      <div style="width: 22px; height: 22px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div style="padding: 40px 24px 0;"><button class="primary-cta" onclick="goTo('ob-electronics')">Next · add electronics →</button></div>
+    </div>`;
+}
+
+// 11. ELECTRONICS — calm
 function renderObElectronics() {
   const scr = document.getElementById('screen-ob-electronics');
   if (!scr) return;
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 3, total: 5, stepLabel: '7 · ELECTRONICS (3 of 5)', backTo: 'ob-home' })}
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 3, total: 5, backTo: 'ob-home-saved' })}
     <div class="screen-scroll">
-      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-        ${iconSvg('check', 14, '#1f6638')}
-        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">2 things in your KKOSH so far</div>
-      </div>
+    <div style="margin: 0 20px 20px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">${iconSvg('check', 14, '#1f6638')}<div style="font-size: 12px; color: #1f6638; font-weight: 500;">2 things in your KKOSH</div></div>
 
-      <div style="padding: 4px 24px 0;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
-          <span>📱</span> NEXT · PHONE OR LAPTOP
-        </div>
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Your high-value electronics.</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
-          We save IMEI, warranty, AppleCare, track service history and help if stolen.
-        </div>
-      </div>
-
-      <div style="padding: 22px 16px 0;">
-        <div style="background: white; border: 1.5px solid #A8432E; border-radius: 14px; overflow: hidden;">
-          <div style="padding: 6px 12px; background: rgba(168,67,46,0.1); border-bottom: 0.5px solid rgba(168,67,46,0.2);">
-            <div style="font-size: 9px; letter-spacing: 0.5px; color: #A8432E; font-weight: 600;">⚡ ONE TAP</div>
-          </div>
-          <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 36px; height: 36px; border-radius: 10px; overflow: hidden;">${brandLogo('apple_simple', 36)}</div>
-            <div style="flex: 1;">
-              <div style="font-size: 14px; font-weight: 500;">iPhone 14 · 128GB</div>
-              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Midnight · IMEI verified</div>
-              <div style="font-size: 10px; color: #1f6638; margin-top: 2px;">We detected this phone</div>
-            </div>
-          </div>
-          <button onclick="goTo('ob-appliance')" style="width: 100%; padding: 14px; background: #A8432E; color: white; font-size: 13px; font-weight: 500; border-radius: 0;">Add my iPhone 14 →</button>
-        </div>
-
-        <div style="text-align: center; font-size: 10px; color: #9a958f; letter-spacing: 0.5px; margin: 20px 0 12px;">OR ADD DIFFERENT ELECTRONIC</div>
-
-        <button onclick="goTo('ob-appliance')" style="width: 100%; background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; text-align: left;">
-          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.08); display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 18px;">📸</span>
-          </div>
-          <div style="flex: 1;">
-            <div style="font-size: 13px; font-weight: 500;">Laptop, iPad, camera · anything else</div>
-            <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Snap the purchase invoice</div>
-          </div>
-          ${iconSvg('chevron', 14, '#9a958f')}
-        </button>
-
-        <div style="text-align: center; margin-top: 14px;">
-          <button onclick="goTo('ob-appliance')" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
-        </div>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
-        <button onclick="goTo('ob-appliance')" style="font-size: 11px; color: #6b6660; padding: 12px;">No electronics to add · Done for now</button>
-      </div>
+    <div style="padding: 0 24px;">
+      <div style="font-size: 11px; color: #6b6660; letter-spacing: 0.3px; font-weight: 500; margin-bottom: 12px;">3 of 5 · Electronics</div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Your high-value<br>electronics.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.6;">We save IMEI, warranty, AppleCare, track service history and help if stolen.</div>
     </div>
-  `;
+
+    <div style="padding: 32px 20px 0;">
+      <div style="background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; overflow: hidden;">
+        <div style="padding: 8px 16px; background: rgba(45,138,78,0.06);"><div style="font-size: 9px; letter-spacing: 0.5px; color: #1f6638; font-weight: 600;">⚡ DETECTED ON THIS PHONE</div></div>
+        <div style="padding: 18px 16px; display: flex; align-items: center; gap: 14px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; overflow: hidden;">${brandLogo('apple_simple', 40)}</div>
+          <div style="flex: 1;"><div style="font-size: 16px; font-weight: 500;">iPhone 14 · 128GB</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">Midnight · IMEI verified</div></div>
+        </div>
+        <button onclick="goTo('ob-electronics-saved')" style="width: 100%; padding: 14px; background: #1a1a1a; color: white; font-size: 13px; font-weight: 500; border-radius: 0;">Add my iPhone 14 →</button>
+      </div>
+
+      <div style="text-align: center; font-size: 10px; color: #9a958f; margin: 24px 0 16px;">OR ADD A DIFFERENT DEVICE</div>
+
+      <button onclick="goTo('ob-electronics-saved')" style="width: 100%; background: white; border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 14px; text-align: left; border: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center; font-size: 20px;">📸</div>
+        <div style="flex: 1;"><div style="font-size: 14px; font-weight: 500;">Laptop, iPad, camera</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">Snap the purchase invoice</div></div>
+        ${iconSvg('chevron', 14, '#9a958f')}
+      </button>
+
+      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-electronics-saved')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+    </div>
+
+    <div style="padding: 28px 24px 0; text-align: center;"><button onclick="goTo('ob-appliance')" style="font-size: 12px; color: #9a958f;">No electronics · Skip</button></div>
+    </div>`;
 }
 
-// 8. APPLIANCE
+// 12. ELECTRONICS SAVED
+function renderObElectronicsSaved() {
+  const scr = document.getElementById('screen-ob-electronics-saved');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 3, total: 5, backTo: 'ob-electronics' })}
+    <div class="screen-scroll">
+    <div style="padding: 56px 24px 0; text-align: center;">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(45,138,78,0.12); display: inline-flex; align-items: center; justify-content: center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1f6638" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="font-size: 24px; font-weight: 500; margin-top: 20px;">iPhone 14 saved.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">3 things in your KKOSH.</div>
+    </div>
+    <div style="margin: 36px 20px 0; background: white; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; overflow: hidden;">${brandLogo('apple_simple', 44)}</div>
+      <div style="flex: 1;"><div style="font-size: 15px; font-weight: 500;">iPhone 14</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">128GB · Midnight</div></div>
+      <div style="width: 22px; height: 22px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div style="padding: 40px 24px 0;"><button class="primary-cta" onclick="goTo('ob-appliance')">Next · add an appliance →</button></div>
+    </div>`;
+}
+
+// 13. APPLIANCE
 function renderObAppliance() {
   const scr = document.getElementById('screen-ob-appliance');
   if (!scr) return;
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 4, total: 5, stepLabel: '8 · APPLIANCE (4 of 5)', backTo: 'ob-electronics' })}
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 4, total: 5, backTo: 'ob-electronics-saved' })}
     <div class="screen-scroll">
-      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-        ${iconSvg('check', 14, '#1f6638')}
-        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">3 things in your KKOSH so far</div>
-      </div>
+    <div style="margin: 0 20px 20px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">${iconSvg('check', 14, '#1f6638')}<div style="font-size: 12px; color: #1f6638; font-weight: 500;">3 things in your KKOSH</div></div>
 
-      <div style="padding: 4px 24px 0;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
-          <span>❄️</span> NEXT · HOME APPLIANCES
-        </div>
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">AC, fridge, washing machine?</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
-          Most people forget their AMC expired until it's too late. Add one appliance — we track warranty, compressor cover, filter cleaning, AMC renewals.
-        </div>
-      </div>
+    <div style="padding: 0 24px;">
+      <div style="font-size: 11px; color: #A8432E; letter-spacing: 0.3px; font-weight: 500; margin-bottom: 12px;">4 of 5 · Appliances</div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">AC, fridge, washing<br>machine?</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.6;">Most people forget their AMC expired. We track warranty, compressor cover, filter cleaning.</div>
+    </div>
 
-      <div style="padding: 22px 16px 0;">
-        <div style="background: white; border-radius: 14px; padding: 16px;">
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #A8432E; font-weight: 500; margin-bottom: 10px;">SNAP A PURCHASE INVOICE</div>
-          <div style="padding: 14px; background: rgba(168,67,46,0.05); border: 1px dashed rgba(168,67,46,0.3); border-radius: 12px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.15); display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 16px;">📸</span>
-            </div>
-            <div style="flex: 1;">
-              <div style="font-size: 13px; font-weight: 500;">We pull automatically:</div>
-              <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Brand · model · capacity · purchase · warranty · dealer</div>
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
-            <button onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="padding: 11px; border-radius: 10px; background: transparent; border: 1.5px solid #A8432E; color: #A8432E; font-size: 12px; font-weight: 500;">Take photo</button>
-            <button onclick="openOcrFlow({ preset: 'appliance_partial', fromOnboarding: true })" style="padding: 11px; border-radius: 10px; background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #1a1a1a; font-size: 12px; font-weight: 500;">Pick from gallery</button>
-          </div>
+    <div style="padding: 32px 20px 0;">
+      <div style="background: white; border-radius: 16px; padding: 18px;">
+        <div style="padding: 16px; background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; display: flex; align-items: center; gap: 14px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; font-size: 18px;">📸</div>
+          <div style="flex: 1;"><div style="font-size: 14px; font-weight: 500;">Snap a purchase invoice</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">Brand · model · warranty · dealer</div></div>
         </div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="margin-top: 0;">Scan invoice →</button>
-        <div style="text-align: center; margin-top: 14px;">
-          <button onclick="goTo('ob-family')" style="font-size: 12px; color: #6b6660;">No invoice handy? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px;">
+          <button onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })" style="padding: 13px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); font-size: 13px; font-weight: 500;">Take photo</button>
+          <button onclick="openOcrFlow({ preset: 'appliance_partial', fromOnboarding: true })" style="padding: 13px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); font-size: 13px; color: #6b6660;">From gallery</button>
         </div>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
-        <button onclick="goTo('ob-family')" style="font-size: 11px; color: #6b6660; padding: 12px;">No appliances to add · Done for now</button>
       </div>
     </div>
-  `;
+
+    <div style="padding: 28px 24px 0;">
+      <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })">Scan invoice →</button>
+      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-appliance-saved')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+    </div>
+
+    <div style="padding: 24px 24px 0; text-align: center;"><button onclick="goTo('ob-family')" style="font-size: 12px; color: #9a958f;">No appliances · Skip</button></div>
+    </div>`;
 }
 
-// 9. FAMILY
+// 14. APPLIANCE SAVED
+function renderObApplianceSaved() {
+  const scr = document.getElementById('screen-ob-appliance-saved');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 4, total: 5, backTo: 'ob-appliance' })}
+    <div class="screen-scroll">
+    <div style="padding: 56px 24px 0; text-align: center;">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(45,138,78,0.12); display: inline-flex; align-items: center; justify-content: center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1f6638" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="font-size: 24px; font-weight: 500; margin-top: 20px;">Voltas AC saved.</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">4 things in your KKOSH.</div>
+    </div>
+    <div style="margin: 36px 20px 0; background: white; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; overflow: hidden;">${brandLogo('voltas', 44)}</div>
+      <div style="flex: 1;"><div style="font-size: 15px; font-weight: 500;">Voltas Split AC</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">1.5 ton · 5-star · Living room</div></div>
+      <div style="width: 22px; height: 22px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </div>
+    <div style="padding: 40px 24px 0;"><button class="primary-cta" onclick="goTo('ob-family')">Last step · add family →</button></div>
+    </div>`;
+}
+
+// 15. FAMILY
 function renderObFamily() {
   const scr = document.getElementById('screen-ob-family');
   if (!scr) return;
-  const userInitial = (obState.name || 'K').charAt(0).toUpperCase();
-  const userName = obState.name || 'Khushwant';
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    ${obHeader({ step: 5, total: 5, stepLabel: '9 · FAMILY (5 of 5)', backTo: 'ob-appliance' })}
+  const ui = (obState.name || 'K').charAt(0).toUpperCase();
+  const un = obState.name || 'Khushwant';
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 5, total: 5, backTo: 'ob-appliance-saved' })}
     <div class="screen-scroll">
-      <div style="margin: 0 16px 14px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-        ${iconSvg('check', 14, '#1f6638')}
-        <div style="font-size: 12px; color: #1f6638; font-weight: 500;">4 things in your KKOSH · last step</div>
+    <div style="margin: 0 20px 20px; padding: 10px 14px; background: rgba(45,138,78,0.08); border-radius: 10px; display: flex; align-items: center; gap: 8px;">${iconSvg('check', 14, '#1f6638')}<div style="font-size: 12px; color: #1f6638; font-weight: 500;">4 things saved · last step</div></div>
+
+    <div style="padding: 0 24px;">
+      <div style="font-size: 11px; color: #A8432E; letter-spacing: 0.3px; font-weight: 500; margin-bottom: 12px;">5 of 5 · Family</div>
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Who lives with you?</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 10px; line-height: 1.6;">Your things belong to people. Add your family so we know whose insurance is due.</div>
+    </div>
+
+    <div style="padding: 32px 20px 0;">
+      <div style="background: white; border-radius: 16px; padding: 18px;">
+        <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.06);">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: #1a1a1a; color: white; font-size: 15px; display: flex; align-items: center; justify-content: center; font-weight: 500;">${ui}</div>
+          <div style="flex: 1;"><div style="font-size: 15px; font-weight: 500;">${un}</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">You · head of household</div></div>
+          <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.05); letter-spacing: 0.4px; font-weight: 500;">YOU</span>
+        </div>
+        <button onclick="goTo('ob-reveal')" style="width: 100%; padding: 16px 0 0; display: flex; align-items: center; gap: 14px; text-align: left;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px dashed rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center;">${iconSvg('plus', 16, '#6b6660')}</div>
+          <div><div style="font-size: 14px; font-weight: 500;">Add a family member</div><div style="font-size: 12px; color: #6b6660; margin-top: 3px;">Name · relationship to you</div></div>
+        </button>
       </div>
 
-      <div style="padding: 4px 24px 0;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #A8432E; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 10px;">
-          <span>👥</span> FINALLY · YOUR FAMILY
+      <div style="margin-top: 16px; background: rgba(0,0,0,0.03); border-radius: 14px; padding: 16px;">
+        <div style="font-size: 10px; letter-spacing: 0.5px; color: #6b6660; font-weight: 500; margin-bottom: 12px;">COMMON RELATIONSHIPS</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${['Spouse', 'Child', 'Parent', 'Sibling'].map(r => `<button onclick="goTo('ob-reveal')" style="padding: 9px 16px; border-radius: 20px; background: white; border: 0.5px solid rgba(0,0,0,0.06); font-size: 13px; font-weight: 500;">+ ${r}</button>`).join('')}
         </div>
-        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.25;">Who lives with you?</div>
-        <div style="font-size: 13px; color: #6b6660; margin-top: 6px; line-height: 1.5;">
-          Your things belong to people. Add your family so we know whose insurance is due, whose phone needs recharge, whose loan is on EMI.
-        </div>
-      </div>
-
-      <div style="padding: 22px 16px 0;">
-        <div style="background: white; border-radius: 14px; padding: 14px;">
-          <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.06);">
-            <div class="avatar-lg self" style="width: 40px; height: 40px; font-size: 13px;">${userInitial}</div>
-            <div style="flex: 1;">
-              <div style="font-size: 14px; font-weight: 500;">${userName}</div>
-              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">You · head of household</div>
-            </div>
-            <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.06); color: #1a1a1a; letter-spacing: 0.4px; font-weight: 500;">YOU</span>
-          </div>
-          <button onclick="showToast('Add family member')" style="width: 100%; padding: 12px 0 0; display: flex; align-items: center; gap: 12px; text-align: left;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed rgba(168,67,46,0.35); display: flex; align-items: center; justify-content: center;">
-              ${iconSvg('plus', 16, '#A8432E')}
-            </div>
-            <div style="flex: 1;">
-              <div style="font-size: 13px; color: #A8432E; font-weight: 500;">Add a family member</div>
-              <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">Name · relationship to you</div>
-            </div>
-          </button>
-        </div>
-
-        <div style="margin-top: 14px; background: rgba(0,0,0,0.03); border-radius: 12px; padding: 14px;">
-          <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">COMMON RELATIONSHIPS</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-            ${['Spouse', 'Child', 'Parent', 'Sibling'].map(r =>
-              `<button onclick="showToast('+ Add ${r}')" style="padding: 7px 12px; border-radius: 16px; background: white; border: 0.5px solid rgba(0,0,0,0.08); font-size: 12px; font-weight: 500; color: #1a1a1a;">+ ${r}</button>`
-            ).join('')}
-          </div>
-        </div>
-      </div>
-
-      <div style="padding: 22px 24px 0;">
-        <button class="form-save-btn" onclick="goTo('ob-reveal')" style="margin-top: 0;">Add family member →</button>
-      </div>
-
-      <div style="padding: 18px 24px 0; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.05); margin-top: 20px;">
-        <button onclick="goTo('ob-reveal')" style="font-size: 11px; color: #6b6660; padding: 12px;">I live alone · <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Finish & go home →</span></button>
       </div>
     </div>
-  `;
+
+    <div style="padding: 32px 24px 0;"><button class="form-save-btn" onclick="goTo('ob-reveal')">Add family member →</button></div>
+    <div style="padding: 24px 24px 0; text-align: center;"><button onclick="goTo('ob-reveal')" style="font-size: 12px; color: #9a958f;">I live alone · Finish</button></div>
+    </div>`;
 }
 
-// 10. REVEAL
+// 16. REVEAL — money shown as "discovered" from Parivahan/BBPS data
 function renderObReveal() {
   const scr = document.getElementById('screen-ob-reveal');
   if (!scr) return;
-  const householdName = obState.household || 'Sharma';
-  scr.innerHTML = `
-    <div class="status-bar"></div>
-    <div style="padding: 14px 16px 0; display: flex; justify-content: center;">
-      <div style="font-size: 10px; letter-spacing: 0.8px; color: #A8432E; font-weight: 500;">10 · THE REVEAL</div>
+  const h = obState.household || 'Sharma';
+  scr.innerHTML = `<div class="status-bar"></div><div class="screen-scroll">
+    <div style="padding: 60px 24px 0; text-align: center;">
+      <div style="font-size: 12px; letter-spacing: 0.5px; color: #C9A646; font-weight: 500;">✨ YOUR HOUSEHOLD IS READY</div>
+      <div style="margin-top: 14px; font-size: 28px; font-weight: 500; letter-spacing: -0.5px;">Meet your KKOSH.</div>
     </div>
-    <div class="screen-scroll">
-      <div style="padding: 28px 24px 0; text-align: center;">
-        <div style="font-size: 11px; letter-spacing: 0.6px; color: #C9A646; font-weight: 500;">✨ YOUR HOUSEHOLD IS READY</div>
-        <div style="margin-top: 10px; font-size: 26px; font-weight: 500; letter-spacing: -0.4px;">Meet your KKOSH.</div>
+    <div style="margin: 36px 20px 0; background: white; border-radius: 20px; padding: 28px 24px; text-align: center;">
+      <div style="font-size: 34px; font-weight: 500; letter-spacing: -1px;">KKOSH</div>
+      <div style="font-size: 13px; color: #6b6660; margin-top: 6px;">${h} household</div>
+      <div style="display: flex; justify-content: center; margin-top: 22px;">
+        ${['R','S','K','R','R'].map((l,i) => `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${i===2?'#1a1a1a':i<2?'#A8432E':'#9a958f'}; color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 3px solid white;${i>0?'margin-left:-10px;':''}">${l}</div>`).join('')}
       </div>
-
-      <div style="margin: 26px 16px 0; background: white; border-radius: 18px; padding: 24px 20px; text-align: center;">
-        <div style="font-size: 32px; font-weight: 500; letter-spacing: -0.8px; line-height: 1;">KKOSH</div>
-        <div style="font-size: 12px; color: #6b6660; margin-top: 6px;">${householdName} household</div>
-
-        <div style="display: flex; justify-content: center; margin-top: 16px;">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: #A8432E; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white;">R</div>
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: #A8432E; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">S</div>
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: #1a1a1a; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">K</div>
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: #9a958f; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">R</div>
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: #9a958f; color: white; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; margin-left: -10px;">R</div>
-        </div>
-
-        <div style="margin-top: 24px; padding-top: 20px; border-top: 0.5px solid rgba(0,0,0,0.06); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;">
-          <div>
-            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">5</div>
-            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">PEOPLE</div>
-          </div>
-          <div>
-            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">5</div>
-            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">THINGS</div>
-          </div>
-          <div>
-            <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.4px;">₹42k</div>
-            <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.6px; font-weight: 500; margin-top: 2px;">MONEY</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="padding: 30px 24px 0; text-align: center;">
-        <div style="font-size: 13px; color: #6b6660; line-height: 1.5;">
-          Next time something expires,<br>we'll find you before it finds you.
-        </div>
-      </div>
-
-      <div style="padding: 28px 16px 0;">
-        <button class="primary-cta" onclick="onboardingComplete()">Enter your KKOSH →</button>
+      <div style="margin-top: 28px; padding-top: 22px; border-top: 0.5px solid rgba(0,0,0,0.06); display: grid; grid-template-columns: 1fr 1fr 1fr;">
+        <div><div style="font-size: 26px; font-weight: 500;">5</div><div style="font-size: 10px; color: #6b6660; letter-spacing: 0.4px; font-weight: 500; margin-top: 4px;">PEOPLE</div></div>
+        <div><div style="font-size: 26px; font-weight: 500;">4</div><div style="font-size: 10px; color: #6b6660; letter-spacing: 0.4px; font-weight: 500; margin-top: 4px;">THINGS</div></div>
+        <div><div style="font-size: 26px; font-weight: 500;">₹42k</div><div style="font-size: 10px; color: #6b6660; letter-spacing: 0.4px; font-weight: 500; margin-top: 4px;">DISCOVERED</div></div>
       </div>
     </div>
-  `;
+    <div style="text-align: center; margin-top: 10px;"><div style="font-size: 10px; color: #9a958f; line-height: 1.5;">Insurance, challans, utilities — commitments<br>we found while setting up your KKOSH</div></div>
+    <div style="padding: 40px 24px 0; text-align: center;"><div style="font-size: 14px; color: #6b6660; line-height: 1.6;">Next time something expires,<br>we'll find you before it finds you.</div></div>
+    <div style="padding: 32px 20px 0;"><button class="primary-cta" onclick="onboardingComplete()">Enter your KKOSH →</button></div>
+    </div>`;
 }
 
-function onboardingComplete() {
-  // Reset expansion state so user lands clean on Home
-  showToast('Welcome to KKOSH');
-  setTimeout(() => goTo('home'), 800);
-}
-
+function onboardingComplete() { goTo('home'); }
 /* ============ OCR FLOW (Invoice scan → Review → Save) ============ */
 
 // Central state for OCR flow
@@ -5059,13 +5451,19 @@ const originalRenderAll = renderAll;
 renderAll = function() {
   originalRenderAll();
   if (typeof renderOnboardingIntro === 'function') renderOnboardingIntro();
-  if (typeof renderObGate === 'function') renderObGate();
+  if (typeof renderObPhone === 'function') renderObPhone();
   if (typeof renderObOtp === 'function') renderObOtp();
+  if (typeof renderObName === 'function') renderObName();
   if (typeof renderObVehicle === 'function') renderObVehicle();
+  if (typeof renderObValidate === 'function') renderObValidate();
   if (typeof renderObWow === 'function') renderObWow();
+  if (typeof renderObCelebrate === 'function') renderObCelebrate();
   if (typeof renderObHome === 'function') renderObHome();
+  if (typeof renderObHomeSaved === 'function') renderObHomeSaved();
   if (typeof renderObElectronics === 'function') renderObElectronics();
+  if (typeof renderObElectronicsSaved === 'function') renderObElectronicsSaved();
   if (typeof renderObAppliance === 'function') renderObAppliance();
+  if (typeof renderObApplianceSaved === 'function') renderObApplianceSaved();
   if (typeof renderObFamily === 'function') renderObFamily();
   if (typeof renderObReveal === 'function') renderObReveal();
   if (typeof renderOcrReview === 'function') renderOcrReview();
