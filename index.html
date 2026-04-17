@@ -691,6 +691,7 @@ input { font-family: inherit; }
     <div class="screen" id="screen-wizard-insurance"></div>
     <div class="screen" id="screen-wizard-sip"></div>
     <div class="screen" id="screen-wizard-education"></div>
+    <div class="screen" id="screen-transactions"></div>
 
     <!-- Add Vehicle Sheet -->
     <div class="sheet-backdrop" id="addVehicle-backdrop" onclick="closeFormSheet('addVehicle')"></div>
@@ -1553,13 +1554,15 @@ function renderProfile() {
         </div>
       </div>
 
-      <!-- Transaction summary -->
-      <div class="section-header"><div class="section-title">TRANSACTION SUMMARY</div></div>
-      <div style="padding: 0 20px 8px; font-size: 11px; color: #6b6660; line-height: 1.5;">Payments processed via KKOSH this month.</div>
-      <div style="margin: 0 16px; background: white; border-radius: 14px; padding: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <div><div style="font-size: 10px; color: #9a958f;">April 2026</div><div style="font-size: 24px; font-weight: 500; margin-top: 2px;">₹52,889</div></div>
-          <div style="text-align: right;"><div style="font-size: 11px; color: #1f6638;">₹45,000 paid</div><div style="font-size: 11px; color: #8a5d09; margin-top: 2px;">₹7,889 upcoming</div></div>
+      <!-- Transaction history link -->
+      <div style="margin: 20px 16px 0;">
+        <div onclick="goTo('transactions')" style="background: white; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 14px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: #F7F1E8; display: flex; align-items: center; justify-content: center;">${iconSvg('doc', 18, '#1a1a1a')}</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500;">Transaction history</div>
+            <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">₹52,889 this month · 8 transactions</div>
+          </div>
+          ${iconSvg('chevron', 14, '#9a958f')}
         </div>
       </div>
 
@@ -1572,6 +1575,112 @@ function renderProfile() {
           <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile" style="background:#1a1a1a;">${iconSvg('gear', 16, 'white')}</div><div class="row-main"><div class="row-title">Settings & dev toggles</div><div class="row-sub">Simulator controls</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
         </div>
       </div>
+      <div style="height: 40px;"></div>
+    </div>
+  `;
+}
+
+/* ============ TRANSACTION HISTORY ============ */
+function renderTransactions() {
+  const scr = document.getElementById('screen-transactions');
+  if (!scr) return;
+
+  const transactions = [
+    { id: 'tx-1', date: '14 Apr', label: 'Electricity bill', asset: 'Woodstock 15 SF', category: 'property', amount: 2850, status: 'paid', method: 'BBPS · Auto-pay', member: 'Khushwant' },
+    { id: 'tx-2', date: '12 Apr', label: 'Society maintenance', asset: 'Woodstock 15 SF', category: 'property', amount: 4500, status: 'paid', method: 'UPI', member: 'Rajinder' },
+    { id: 'tx-3', date: '10 Apr', label: 'Challan payment', asset: 'Honda City', category: 'vehicles', amount: 1500, status: 'paid', method: 'KKOSH Pay', member: 'Khushwant' },
+    { id: 'tx-4', date: '5 Apr', label: 'Home loan EMI', asset: 'Woodstock 15 SF', category: 'property', amount: 18500, status: 'paid', method: 'eNACH · HDFC Bank', member: 'Rajinder' },
+    { id: 'tx-5', date: '5 Apr', label: 'Car loan EMI', asset: 'Honda City', category: 'vehicles', amount: 12400, status: 'paid', method: 'eNACH · ICICI Bank', member: 'Rajinder' },
+    { id: 'tx-6', date: '3 Apr', label: 'Mobile recharge', asset: 'iPhone 16', category: 'electronics', amount: 599, status: 'paid', method: 'BBPS', member: 'Khushwant' },
+    { id: 'tx-7', date: '1 Apr', label: 'Health insurance', asset: null, category: 'other', amount: 8200, status: 'paid', method: 'Auto-debit · Star Health', member: 'Sunita' },
+    { id: 'tx-8', date: '1 Apr', label: 'SIP · Axis Bluechip', asset: null, category: 'other', amount: 5000, status: 'paid', method: 'Auto-debit · Groww', member: 'Khushwant' },
+    { id: 'tx-9', date: '18 Apr', label: 'Property tax', asset: 'Woodstock 15 SF', category: 'property', amount: 4200, status: 'upcoming', method: 'BBPS', member: 'Rajinder' },
+    { id: 'tx-10', date: '20 Apr', label: 'School fee Q2', asset: null, category: 'other', amount: 32000, status: 'upcoming', method: 'Bank transfer', member: 'Rohan' },
+  ];
+
+  const paid = transactions.filter(t => t.status === 'paid');
+  const upcoming = transactions.filter(t => t.status === 'upcoming');
+  const paidTotal = paid.reduce((s, t) => s + t.amount, 0);
+  const upcomingTotal = upcoming.reduce((s, t) => s + t.amount, 0);
+  const fmt = n => n >= 1000 ? '₹' + n.toLocaleString('en-IN') : '₹' + n;
+
+  const catIc = { vehicles: 'car', property: 'home', electronics: 'phone', appliances: 'appliance', other: 'other' };
+
+  function txRow(tx) {
+    const isPaid = tx.status === 'paid';
+    return `<div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.04);">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: ${isPaid ? 'rgba(45,138,78,0.08)' : 'rgba(200,135,13,0.08)'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+        ${iconSvg(catIc[tx.category] || 'other', 16, isPaid ? '#1f6638' : '#8a5d09')}
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div style="font-size: 14px; font-weight: 500;">${tx.label}</div>
+          <div style="font-size: 14px; font-weight: 500; flex-shrink: 0; margin-left: 8px;">${fmt(tx.amount)}</div>
+        </div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${tx.asset ? tx.asset + ' · ' : ''}${tx.member}</div>
+        <div style="font-size: 10px; color: #9a958f; margin-top: 2px;">${tx.date} · ${tx.method}</div>
+      </div>
+    </div>`;
+  }
+
+  const paidRows = paid.map(txRow).join('');
+  const upcomingRows = upcoming.map(txRow).join('');
+
+  scr.innerHTML = `
+    <div class="status-bar"></div>
+    <div style="padding: 14px 20px 0; display: flex; align-items: center; gap: 12px;">
+      <button class="back-btn" onclick="goTo('profile')">${iconSvg('back', 18, '#1a1a1a')}</button>
+      <div style="font-size: 17px; font-weight: 500;">Transactions</div>
+    </div>
+    <div class="screen-scroll">
+      <!-- Month summary -->
+      <div style="padding: 20px 20px 0;">
+        <div style="font-size: 11px; color: #9a958f;">April 2026</div>
+        <div style="font-size: 28px; font-weight: 500; margin-top: 4px; letter-spacing: -0.5px;">${fmt(paidTotal + upcomingTotal)}</div>
+        <div style="display: flex; gap: 16px; margin-top: 8px;">
+          <div style="font-size: 12px; color: #1f6638;">${fmt(paidTotal)} paid</div>
+          <div style="font-size: 12px; color: #8a5d09;">${fmt(upcomingTotal)} upcoming</div>
+        </div>
+      </div>
+
+      <!-- Upcoming -->
+      ${upcoming.length > 0 ? `
+      <div style="padding: 24px 20px 0;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.6px; color: #8a5d09; margin-bottom: 4px;">UPCOMING</div>
+        <div style="background: white; border-radius: 14px; padding: 2px 16px;">
+          ${upcomingRows}
+        </div>
+      </div>` : ''}
+
+      <!-- Paid -->
+      <div style="padding: 20px 20px 0;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.6px; color: #1f6638; margin-bottom: 4px;">PAID</div>
+        <div style="background: white; border-radius: 14px; padding: 2px 16px;">
+          ${paidRows}
+        </div>
+      </div>
+
+      <!-- Older months -->
+      <div style="padding: 20px 20px 0;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.6px; color: #9a958f; margin-bottom: 4px;">MARCH 2026</div>
+        <div style="background: white; border-radius: 14px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div style="font-size: 13px; color: #6b6660;">12 transactions</div>
+            <div style="font-size: 14px; font-weight: 500;">${fmt(48750)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 12px 20px 0;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.6px; color: #9a958f; margin-bottom: 4px;">FEBRUARY 2026</div>
+        <div style="background: white; border-radius: 14px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div style="font-size: 13px; color: #6b6660;">10 transactions</div>
+            <div style="font-size: 14px; font-weight: 500;">${fmt(41200)}</div>
+          </div>
+        </div>
+      </div>
+
       <div style="height: 40px;"></div>
     </div>
   `;
@@ -1800,6 +1909,7 @@ function goTo(screen, params) {
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
   if (params && params.assetId) renderAssetCard(params.assetId);
+  if (screen === 'transactions' && typeof renderTransactions === 'function') renderTransactions();
 }
 
 function updateTabBar(screen) {
@@ -1992,36 +2102,32 @@ function renderAssetCard(assetId) {
     const locationPills = [];
     if (t.assignees[0]) {
       const m = getMemberById(t.assignees[0]);
-      if (m) locationPills.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(255,255,255,0.12); font-size: 10px;">${m.short}</span>`);
+      if (m) locationPills.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(0,0,0,0.05); font-size: 10px; color: #6b6660;">${m.short}</span>`);
     }
-    if (t.location) locationPills.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(255,255,255,0.12); font-size: 10px;">${t.location.split(' · ')[0]}</span>`);
-    heroHtml = `<div style="background: #1a1a1a; color: white; padding: 22px 20px; margin: 10px 16px 0; border-radius: 18px; position: relative;">
-      ${config.brandLogo ? `<div style="position: absolute; top: 16px; right: 16px; opacity: 0.9;">${brandLogo(config.brandLogo, 32)}</div>` : ''}
-      <div style="font-size: 10px; letter-spacing: 0.6px; color: rgba(255,255,255,0.5); font-weight: 500;">${t.category.toUpperCase()}</div>
+    if (t.location) locationPills.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(0,0,0,0.05); font-size: 10px; color: #6b6660;">${t.location.split(' · ')[0]}</span>`);
+    heroHtml = `<div style="background: #F7F1E8; color: #1a1a1a; padding: 22px 20px; margin: 10px 16px 0; border-radius: 18px; position: relative;">
+      ${config.brandLogo ? `<div style="position: absolute; top: 16px; right: 16px; opacity: 0.12;">${brandLogo(config.brandLogo, 32)}</div>` : ''}
+      <div style="font-size: 10px; letter-spacing: 0.6px; color: #9a958f; font-weight: 500;">${t.category.toUpperCase()}</div>
       <div style="font-size: 22px; font-weight: 500; margin-top: 6px; letter-spacing: -0.3px; padding-right: ${config.brandLogo ? '48px' : '0'};">${t.name}</div>
-      <div style="font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px;">${t.sub}</div>
+      <div style="font-size: 12px; color: #6b6660; margin-top: 3px;">${t.sub}</div>
       ${locationPills.length > 0 ? `<div style="margin-top: 12px; display: flex; gap: 6px;">${locationPills.join('')}</div>` : ''}
     </div>`;
   } else {
-    const locationLine = t.location ? `<div style="font-size: 11px; color: #6b6660; margin-top: 3px; display: flex; align-items: center; gap: 4px;">${iconSvg('home', 11, '#9a958f')} <span>${t.location}</span></div>` : '';
-    heroHtml = `<div style="padding: 6px 20px 0; position: relative;">
-      <div style="display: flex; align-items: flex-start; gap: 12px;">
-        <div style="position: relative; flex-shrink: 0;">
-          ${config.brandLogo
-            ? `<div style="width: 44px; height: 44px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${brandLogo(config.brandLogo, 44)}</div>`
-            : `<div style="width: 44px; height: 44px; border-radius: 12px; background: #F7F1E8; display: flex; align-items: center; justify-content: center;">${iconSvg(t.icon, 22, '#1a1a1a')}</div>`
-          }
-          ${assigneeOverlay}
-        </div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <div style="font-size: 19px; font-weight: 500; letter-spacing: -0.2px;">${t.name}</div>
-            ${config.modeBadge || ''}
-          </div>
-          <div style="font-size: 12px; color: #6b6660; margin-top: 2px;">${t.sub}</div>
-          ${locationLine}
-        </div>
+    const locationPillsStd = [];
+    if (t.assignees[0]) {
+      const m = getMemberById(t.assignees[0]);
+      if (m) locationPillsStd.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(0,0,0,0.05); font-size: 10px; color: #6b6660;">${m.short}</span>`);
+    }
+    if (t.location) locationPillsStd.push(`<span style="padding: 4px 10px; border-radius: 14px; background: rgba(0,0,0,0.05); font-size: 10px; color: #6b6660;">${t.location.split(' · ')[0]}</span>`);
+    heroHtml = `<div style="background: #F7F1E8; color: #1a1a1a; padding: 22px 20px; margin: 10px 16px 0; border-radius: 18px; position: relative;">
+      ${config.brandLogo ? `<div style="position: absolute; top: 16px; right: 16px; opacity: 0.12;">${brandLogo(config.brandLogo, 32)}</div>` : ''}
+      <div style="font-size: 10px; letter-spacing: 0.6px; color: #9a958f; font-weight: 500;">${t.category.toUpperCase()}</div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+        <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.3px; padding-right: ${config.brandLogo ? '48px' : '0'};">${t.name}</div>
+        ${config.modeBadge || ''}
       </div>
+      <div style="font-size: 12px; color: #6b6660; margin-top: 3px;">${t.sub}</div>
+      ${locationPillsStd.length > 0 ? `<div style="margin-top: 12px; display: flex; gap: 6px;">${locationPillsStd.join('')}</div>` : ''}
     </div>`;
   }
 
