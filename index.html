@@ -2156,128 +2156,64 @@ function renderAssetCard(assetId) {
     </div>`;
   };
 
-  // PROTECTION — top 2 urgent (by your guidance), rest inline on expand
+  // PROTECTION — slot-based. Show all possible items per category.
+  const protectionSlots = {
+    vehicles: ['Motor insurance', 'PUC', 'Fitness certificate', 'Road tax', 'Extended warranty', 'RSA', 'Hypothecation'],
+    property: ['Home insurance', 'Fire insurance', 'Structural warranty', 'Property tax', 'Home loan'],
+    electronics: ['Manufacturer warranty', 'Extended warranty', 'Brand care plan', 'Device insurance'],
+    appliances: ['Manufacturer warranty', 'Compressor warranty', 'Motor warranty', 'Extended warranty', 'AMC'],
+    other: ['Item insurance', 'Valuation certificate', 'Authentication cert', 'Safe deposit locker']
+  };
+  const allSlots = protectionSlots[t.category] || protectionSlots.other;
+  const emptySlots = allSlots.filter(s => !config.protection.some(p => p.label.toLowerCase().includes(s.toLowerCase().split(' ')[0])));
+
   let protectionHtml = '';
-  if (config.protection.length > 0) {
+  if (config.protection.length > 0 || emptySlots.length > 0) {
     const sorted = [...config.protection].sort((a, b) => {
       const prio = { expired: 0, due: 1, active: 2, draft: 3 };
       return (prio[a.state] ?? 4) - (prio[b.state] ?? 4);
     });
     const urgentTop = sorted.filter(p => p.state === 'expired' || p.state === 'due').slice(0, 2);
-    // If no urgent, show top 2 active instead
     const visible = urgentTop.length > 0 ? urgentTop : sorted.slice(0, 2);
     const remaining = sorted.filter(p => !visible.includes(p));
     const isExpanded = !!expand.protection;
-
-    const countText = urgentTop.length > 0
-      ? `${urgentTop.length} need attention · ${config.protection.length} total`
-      : `${config.protection.length} total · all clear`;
-
-    const urgentCountColor = urgentTop.length > 0 ? '#8a5d09' : '#9a958f';
+    const urgentCount = urgentTop.length;
+    const countText = urgentCount > 0
+      ? `${urgentCount} need attention · ${config.protection.length} of ${allSlots.length} configured`
+      : `${config.protection.length} of ${allSlots.length} configured`;
+    const urgentCountColor = urgentCount > 0 ? '#8a5d09' : '#9a958f';
 
     const renderRow = (p) => {
       const stateRight = p.inlinePay
-        ? `<button onclick="event.stopPropagation(); openPayForProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}', '${p.detail.replace(/'/g, "\\'")}', ${parseInt(String(p.inlinePay).replace(/[^\d]/g, '')) || 0})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500; white-space: nowrap;">PAY</button>`
+        ? `<button onclick="event.stopPropagation(); openPayForProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}', '${p.detail.replace(/'/g, "\\'")}', ${parseInt(String(p.inlinePay).replace(/[^\d]/g, '')) || 0})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`
         : `<span class="state-pill ${p.state}">${p.state === 'expired' ? 'EXPIRED' : p.state === 'due' ? (p.stateLabel || 'DUE') : p.state === 'active' ? 'ACTIVE' : p.state === 'draft' ? (p.stateLabel || 'EXPLORE') : ''}</span>`;
-
-      // Inner CTA sits under the pill on the right column (not inline with detail)
       const innerCtaRight = p.innerCta
-        ? `<button onclick="event.stopPropagation(); void 0" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
+        ? `<button onclick="event.stopPropagation(); openEditProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}')" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
         : '';
-
-      // Per-row history expand state
       const rowKey = `prot_${p.label.replace(/[^a-z0-9]/gi, '_')}`;
       const isRowExpanded = !!expand[rowKey];
       const hasHistory = p.history && p.history.length > 0;
-
-      // Tapping the row toggles history if it has history; otherwise opens detail
-      const onClick = hasHistory
-        ? `toggleAssetSection('${assetId}', '${rowKey}')`
-        : `void 0`;
-
-      // Right-top: pill only. When expanded, no Hide text — the ⌃ at bottom-right handles collapse
-      const rightTop = stateRight;
-
-      // Subtle chevron at bottom-right (only for rows with history, and only when collapsed)
-      const historyAffordance = hasHistory
-        ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5; letter-spacing: 0;">${isRowExpanded ? '⌃' : '⌄'}</div>`
-        : '';
-
+      const onClick = hasHistory ? `toggleAssetSection('${assetId}', '${rowKey}')` : `openEditProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}')`;
+      const historyAffordance = hasHistory ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5;">${isRowExpanded ? '⌃' : '⌄'}</div>` : '';
       const amountInline = p.inlinePay
-        ? `<div style="font-size: 11px; color: #8a5d09; margin-top: 3px; line-height: 1.4;">${p.detail} · <span style="color: #1a1a1a; font-weight: 500;">${p.inlinePay}</span></div>`
-        : `<div style="font-size: 11px; color: ${p.state === 'expired' ? '#8a2818' : p.state === 'due' ? '#8a5d09' : '#6b6660'}; margin-top: 3px; line-height: 1.4;">${p.detail}</div>`;
+        ? `<div style="font-size: 11px; color: #8a5d09; margin-top: 3px;">${p.detail} · <span style="color: #1a1a1a; font-weight: 500;">${p.inlinePay}</span></div>`
+        : `<div style="font-size: 11px; color: ${p.state === 'expired' ? '#8a2818' : p.state === 'due' ? '#8a5d09' : '#6b6660'}; margin-top: 3px;">${p.detail}</div>`;
 
       if (p.state === 'expired' || p.state === 'due') {
-        return `
-          <div class="attention-row" style="position: relative;" onclick="${onClick}">
-            <div class="urgency-bar ${p.state === 'expired' ? 'critical' : ''}"></div>
-            <div class="row-body" style="gap: 12px; align-items: flex-start;">
-              <div class="row-main">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                  <div style="font-size: 13px; font-weight: 500; min-width: 0;">${p.label}</div>
-                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
-                    ${rightTop}
-                    ${innerCtaRight}
-                  </div>
-                </div>
-                ${amountInline}
-                ${isRowExpanded && hasHistory ? renderHistoryBlock(p.history) : ''}
-              </div>
-            </div>
-            ${historyAffordance}
-          </div>
-        `;
+        return `<div class="attention-row" style="position: relative;" onclick="${onClick}"><div class="urgency-bar ${p.state === 'expired' ? 'critical' : ''}"></div><div class="row-body" style="gap: 12px; align-items: flex-start;"><div class="row-main"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><div style="font-size: 13px; font-weight: 500;">${p.label}</div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">${stateRight}${innerCtaRight}</div></div>${amountInline}${isRowExpanded && hasHistory ? renderHistoryBlock(p.history) : ''}</div></div>${historyAffordance}</div>`;
       }
-      return `
-        <div class="card-row" style="gap: 0; padding: 12px 14px; align-items: flex-start; position: relative;" onclick="${onClick}">
-          <div class="row-main">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div style="font-size: 13px; font-weight: 500;">${p.label}</div>
-              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
-                ${rightTop}
-                ${innerCtaRight}
-              </div>
-            </div>
-            <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${p.detail}</div>
-            ${isRowExpanded && hasHistory ? renderHistoryBlock(p.history) : ''}
-          </div>
-          ${historyAffordance}
-        </div>
-      `;
+      return `<div class="card-row" style="padding: 12px 14px; align-items: flex-start; position: relative;" onclick="${onClick}"><div class="row-main"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><div style="font-size: 13px; font-weight: 500;">${p.label}</div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">${stateRight}${innerCtaRight}</div></div><div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${p.detail}</div>${isRowExpanded && hasHistory ? renderHistoryBlock(p.history) : ''}</div>${historyAffordance}</div>`;
     };
 
+    const renderEmptySlot = (sl) => `<div class="card-row" style="padding: 12px 14px; opacity: 0.5; cursor: pointer;" onclick="openEditProtection('${assetId}', '${sl.replace(/'/g, "\\'")}')"><div class="row-main"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="font-size: 13px; color: #9a958f;">${sl}</div><span style="font-size: 10px; color: #A8432E; font-weight: 500;">+ Configure</span></div><div style="font-size: 11px; color: #c2bdb5; margin-top: 3px;">Not set up</div></div></div>`;
+
     const visibleHtml = visible.map(renderRow).join('');
-    const remainingHtml = isExpanded ? remaining.map(renderRow).join('') : '';
+    const remainingHtml = isExpanded ? remaining.map(renderRow).join('') + emptySlots.map(renderEmptySlot).join('') : '';
+    const totalHidden = remaining.length + emptySlots.length;
+    const toggleRow = totalHidden > 0 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAssetSection('${assetId}', 'protection')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">${isExpanded ? '⌃' : `Show all ${config.protection.length + emptySlots.length} ↓`}</div></div>` : '';
+    const syncFooter = config.protectionSync ? `<div style="padding: 8px 14px; display: flex; align-items: center; gap: 4px; cursor: pointer;" onclick="showToast('Syncing with ${config.protectionSync.source}...')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c2bdb5" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span style="font-size: 9px; color: #c2bdb5;">${config.protectionSync.source} · ${config.protectionSync.time}</span></div>` : '';
 
-    const toggleRow = remaining.length > 0 ? `
-      <div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAssetSection('${assetId}', 'protection')">
-        <div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">${isExpanded ? '⌃' : `Show all ${config.protection.length} protections ↓`}</div>
-      </div>
-    ` : '';
-
-    // Sync timestamp lives as a subtle footer inside the card, not in the header
-    const syncFooter = config.protectionSync ? `
-      <div style="padding: 8px 14px; display: flex; align-items: center; gap: 4px; cursor: pointer;" onclick="showToast('Syncing with ${config.protectionSync.source}...')">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c2bdb5" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-        <span style="font-size: 9px; color: #c2bdb5;">${config.protectionSync.source} · ${config.protectionSync.time}</span>
-      </div>
-    ` : '';
-
-    // Summary meta line as the first item inside the card
-    const summaryLine = `
-      <div style="padding: 10px 14px 6px; font-size: 10px; color: ${urgentCountColor};">
-        ${countText}
-      </div>
-    `;
-
-    protectionHtml = `
-      <div class="section-header">
-        <div class="section-title">PROTECTION</div>
-      </div>
-      <div class="section-card">
-        ${summaryLine}${visibleHtml}${remainingHtml}${toggleRow}${syncFooter}
-      </div>
-    `;
+    protectionHtml = `<div class="section-header"><div class="section-title">PROTECTION</div></div><div class="section-card"><div style="padding: 10px 14px 6px; font-size: 10px; color: ${urgentCountColor};">${countText}</div>${visibleHtml}${remainingHtml}${toggleRow}${syncFooter}</div>`;
   }
 
   // COMPONENTS — no per-row icon, no brand logo (brand logo reserved for hero + Support only)
@@ -2452,8 +2388,8 @@ function renderAssetCard(assetId) {
     <div class="section-card">
       <div class="docs-grid">
         ${config.docs.map(d => d.uploaded
-          ? `<div class="doc-tile" onclick="showToast('Viewing document');"><div class="doc-check">✓</div><div class="doc-paper"></div><div class="doc-label">${d.label}</div></div>`
-          : `<div class="doc-tile empty" onclick="showToast('Upload from camera or gallery');">${iconSvg('plus', 18, '#9a958f')}<div class="doc-label empty">${d.label}</div></div>`
+          ? `<div class="doc-tile" onclick="openDocSheet('${t.id}', '${d.label}', true)"><div class="doc-check">✓</div><div class="doc-paper"></div><div class="doc-label">${d.label}</div></div>`
+          : `<div class="doc-tile empty" onclick="openDocSheet('${t.id}', '${d.label}', false)">${iconSvg('plus', 18, '#9a958f')}<div class="doc-label empty">${d.label}</div></div>`
         ).join('')}
       </div>
     </div>
@@ -2472,6 +2408,7 @@ function renderAssetCard(assetId) {
             <div style="font-size: 13px; font-weight: 500;">${c.name}</div>
             <div style="font-size: 11px; color: ${c.alert ? '#8a5d09' : '#6b6660'}; margin-top: 3px;">${c.location}${c.alert ? ' · ' + c.alert : ''}</div>
           </div>
+          <button onclick="event.stopPropagation(); openEditConnected('${assetId}', '${c.id}', '${c.location}')" style="font-size: 9px; color: #6b6660; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,0.04); margin-right: 6px;">Move</button>
           ${iconSvg('chevron', 14, '#9a958f')}
         </div>
       `).join('')}
@@ -2485,7 +2422,7 @@ function renderAssetCard(assetId) {
     const isExpanded = !!expand.details;
     const visible = isExpanded ? config.details : config.details.slice(0, 4);
     return `
-    ${sectionHeader(config.detailsLabel || 'DETAILS')}
+    ${sectionHeader(config.detailsLabel || 'DETAILS', { action: "openEditDetails('" + t.id + "')", actionLabel: 'Edit' })}
     <div class="section-card">
       <div style="padding: 4px 0;">
         ${visible.map(d => `
@@ -2605,7 +2542,7 @@ function renderAssetCard(assetId) {
 
   // SUPPORT — no row icons, brand logo inline
   const supportHtml = config.support.length > 0 ? `
-    ${sectionHeader('SUPPORT')}
+    ${sectionHeader('SUPPORT', { action: "handleAssetAdd('support', '" + t.id + "')", actionLabel: '+ Add' })}
     <div class="section-card">
       ${config.support.map(s => `
         <div class="card-row" style="padding: 12px 14px;" onclick="void 0">
@@ -3185,6 +3122,8 @@ function handleAssetAdd(type, assetId) {
   else if (type === 'reminder') openFormSheet('reminder', assetId);
   else if (type === 'component') openFormSheet('component', assetId);
   else if (type === 'service') openFormSheet('service', assetId);
+  else if (type === 'protection') openAddProtectionForm(assetId);
+  else if (type === 'support') openAddSupportForm(assetId);
   else goTo('home');
 }
 
@@ -3193,6 +3132,191 @@ function openPayForProtection(assetId, label, detail, amount) {
 }
 function openPayForUtility(assetId, label, detail, amount) {
   openPaySheet({ assetId, label, detail: `${label} · ${detail.split('·')[0].trim()}`, amount });
+}
+
+/* ============ ADD/EDIT PROTECTION ============ */
+function openEditProtection(assetId, protLabel) {
+  var t = getThingById(assetId);
+  if (!t) return;
+  var config = getAssetConfig(t);
+  var existing = config.protection.find(function(p) { return p.label === protLabel; });
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var isNew = !existing;
+  var title = isNew ? 'Configure ' + protLabel : 'Edit ' + protLabel;
+  var provider = existing ? (existing.detail.split('·')[0] || '').trim() : '';
+  var detail = existing ? existing.detail : '';
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + title + '</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + '</div>' +
+    '<div class="field-label">Provider / Issuer</div>' +
+    '<input type="text" class="text-input" value="' + provider + '" placeholder="e.g. HDFC ERGO" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Policy / Certificate number</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. POL-2024-12345" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Valid from</div>' +
+    '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Valid until / Expires</div>' +
+    '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Premium / Amount</div>' +
+    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Sum insured / Coverage</div>' +
+    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:20px;" />' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + protLabel + (isNew ? ' configured' : ' updated') + '\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">' + (isNew ? 'Save ' + protLabel : 'Update') + '</button>';
+}
+
+function openAddProtectionForm(assetId) {
+  var t = getThingById(assetId);
+  if (!t) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var typeChips = {
+    vehicles: ['Motor insurance', 'PUC', 'Fitness certificate', 'Road tax', 'Extended warranty', 'RSA', 'Hypothecation'],
+    property: ['Home insurance', 'Fire insurance', 'Structural warranty', 'Property tax', 'Home loan'],
+    electronics: ['Manufacturer warranty', 'Extended warranty', 'Brand care plan', 'Device insurance'],
+    appliances: ['Manufacturer warranty', 'Compressor warranty', 'Motor warranty', 'Extended warranty', 'AMC'],
+    other: ['Item insurance', 'Valuation certificate', 'Authentication cert', 'Safe deposit locker']
+  };
+  var chips = (typeChips[t.category] || typeChips.other).map(function(c) {
+    return '<button class="chip" onclick="this.classList.toggle(\'active\')">' + c + '</button>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add protection</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + '</div>' +
+    '<div class="field-label">Type</div>' +
+    '<div class="chip-row" style="margin-bottom:16px;">' + chips + '</div>' +
+    '<div class="field-label">Provider / Issuer</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. HDFC ERGO, Bajaj Allianz" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Policy / Certificate number (optional)</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. POL-2024-12345" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Valid from</div>' +
+    '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Valid until / Expires</div>' +
+    '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Premium / Amount (optional)</div>' +
+    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Sum insured / Coverage (optional)</div>' +
+    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:20px;" />' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ Protection added\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save protection</button>';
+}
+
+/* ============ DOCUMENT VIEW/SHARE/DELETE SHEET ============ */
+function openDocSheet(assetId, docLabel, isUploaded) {
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  if (isUploaded) {
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + docLabel + '</div>' +
+      '<div style="font-size:12px;color:#1f6638;margin-bottom:18px;">✓ Uploaded</div>' +
+      '<div style="width:100%;height:180px;background:rgba(0,0,0,0.04);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">' +
+        '<div style="text-align:center;color:#9a958f;"><div style="font-size:28px;margin-bottom:6px;">📄</div><div style="font-size:11px;">Document preview</div></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+        '<button onclick="closeFormSheet(\'form\'); showToast(\'Shared via WhatsApp\')" style="flex:1;padding:14px;background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.06);text-align:center;">' +
+          '<div style="font-size:16px;margin-bottom:4px;">📤</div><div style="font-size:11px;font-weight:500;">Share</div>' +
+        '</button>' +
+        '<button onclick="closeFormSheet(\'form\'); showToast(\'Downloaded to device\')" style="flex:1;padding:14px;background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.06);text-align:center;">' +
+          '<div style="font-size:16px;margin-bottom:4px;">⬇️</div><div style="font-size:11px;font-weight:500;">Download</div>' +
+        '</button>' +
+        '<button onclick="closeFormSheet(\'form\'); showToast(\'Re-uploading...\')" style="flex:1;padding:14px;background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.06);text-align:center;">' +
+          '<div style="font-size:16px;margin-bottom:4px;">🔄</div><div style="font-size:11px;font-weight:500;">Replace</div>' +
+        '</button>' +
+      '</div>' +
+      '<button onclick="closeFormSheet(\'form\'); showToast(\'' + docLabel + ' deleted\')" style="width:100%;padding:12px;border-radius:12px;background:rgba(181,52,31,0.06);color:#A8432E;font-size:12px;font-weight:500;">Delete document</button>';
+  } else {
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + docLabel + '</div>' +
+      '<div style="font-size:12px;color:#9a958f;margin-bottom:18px;">Not uploaded</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+        '<button onclick="closeFormSheet(\'form\'); showToast(\'Opening camera...\')" style="flex:1;padding:20px;background:white;border-radius:14px;border:1px dashed rgba(0,0,0,0.1);text-align:center;">' +
+          '<div style="font-size:24px;margin-bottom:6px;">📸</div><div style="font-size:12px;font-weight:500;">Take photo</div><div style="font-size:10px;color:#6b6660;margin-top:3px;">Scan document</div>' +
+        '</button>' +
+        '<button onclick="closeFormSheet(\'form\'); showToast(\'Opening gallery...\')" style="flex:1;padding:20px;background:white;border-radius:14px;border:1px dashed rgba(0,0,0,0.1);text-align:center;">' +
+          '<div style="font-size:24px;margin-bottom:6px;">🖼️</div><div style="font-size:12px;font-weight:500;">From gallery</div><div style="font-size:10px;color:#6b6660;margin-top:3px;">Pick existing file</div>' +
+        '</button>' +
+      '</div>' +
+      '<button onclick="closeFormSheet(\'form\'); showToast(\'Upload from DigiLocker\')" style="width:100%;padding:14px;background:rgba(0,0,0,0.04);border-radius:12px;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+        '<span style="font-size:14px;">🔐</span> Import from DigiLocker' +
+      '</button>';
+  }
+}
+
+/* ============ EDIT CONNECTED LOCATION ============ */
+function openEditConnected(assetId, connectedId, currentLocation) {
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  var connectedThing = getThingById(connectedId);
+  var name = connectedThing ? connectedThing.name : connectedId;
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Edit location</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + name + '</div>' +
+    '<div class="field-label">Current room / location</div>' +
+    '<div class="chip-row" style="margin-bottom:16px;">' +
+      ['Living room', 'Bedroom', 'Kitchen', 'Study', 'Bathroom', 'Balcony', 'Guest room'].map(function(r) {
+        return '<button class="chip' + (currentLocation === r ? ' on' : '') + '">' + r + '</button>';
+      }).join('') +
+    '</div>' +
+    '<div class="field-label">Or type a location</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. Master bedroom" value="' + (currentLocation || '') + '" style="margin-bottom:20px;" />' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + name + ' moved\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save location</button>';
+}
+
+/* ============ EDIT DETAILS ============ */
+function openEditDetails(assetId) {
+  var t = getThingById(assetId);
+  if (!t) return;
+  var config = getAssetConfig(t);
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var fieldsHtml = (config.details || []).map(function(d) {
+    return '<div class="field-label">' + d.label + '</div>' +
+      '<input type="text" class="text-input" value="' + d.value + '" style="margin-bottom:12px;" />';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Edit details</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + '</div>' +
+    fieldsHtml +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ Details updated\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save details</button>';
+}
+
+/* ============ ADD CUSTOM SUPPORT CONTACT ============ */
+function openAddSupportForm(assetId) {
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  var t = getThingById(assetId);
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add support contact</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + (t ? t.name : '') + '</div>' +
+    '<div class="field-label">Name / Brand</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. Honda Customer Care" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Phone / Helpline</div>' +
+    '<input type="tel" class="text-input" placeholder="e.g. 1800-XXX-XXXX" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Type</div>' +
+    '<div class="chip-row" style="margin-bottom:14px;">' +
+      '<button class="chip on">Helpline</button>' +
+      '<button class="chip">Email</button>' +
+      '<button class="chip">Chat</button>' +
+      '<button class="chip">Website</button>' +
+    '</div>' +
+    '<div class="field-label">Email (optional)</div>' +
+    '<input type="email" class="text-input" placeholder="e.g. support@brand.com" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Notes (optional)</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. Available 9am-6pm IST" style="margin-bottom:20px;" />' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ Support contact added\')">Save contact</button>';
 }
 
 /* ============ UNIVERSAL SEARCH ============ */
@@ -3311,12 +3435,33 @@ function openAssetEditSheet(assetId) {
         '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'home\')">Save item</button>';
     }
   } else {
-    // EXISTING ASSET — identity edit (name, sub, assignees)
+    // EXISTING ASSET — identity edit (name, sub, assignees, location)
+    var isMoveable = ['electronics', 'appliances', 'other'].includes(t.category);
+    var properties = isMoveable ? getActiveThings().filter(function(th) { return th.category === 'property'; }) : [];
+    var currentProperty = t.location ? t.location.split('·')[0].trim() : '';
+    var currentRoom = t.location ? (t.location.split('·')[1] || '').trim() : '';
+
+    var locationSection = isMoveable ? (
+      '<div class="field-label">Property</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        properties.map(function(p) {
+          return '<button class="chip' + (currentProperty === p.name ? ' on' : '') + '">' + p.name + '</button>';
+        }).join('') +
+        '<button class="chip">None</button>' +
+      '</div>' +
+      '<div class="field-label">Room</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        ['Living room', 'Bedroom', 'Kitchen', 'Study', 'Bathroom', 'Guest room'].map(function(r) {
+          return '<button class="chip' + (currentRoom === r ? ' on' : '') + '">' + r + '</button>';
+        }).join('') +
+      '</div>'
+    ) : '';
+
     html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Edit ' + t.name + '</div>' +
       '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">Change the basic details. Use ⋯ to edit other sections.</div>' +
       '<div class="field-label">Name</div><input type="text" class="text-input" value="' + t.name + '" style="margin-bottom:14px;" />' +
       '<div class="field-label">Description</div><input type="text" class="text-input" value="' + t.sub + '" style="margin-bottom:14px;" />' +
-      (t.location ? '<div class="field-label">Location</div><input type="text" class="text-input" value="' + t.location + '" style="margin-bottom:14px;" />' : '') +
+      locationSection +
       '<div class="field-label">Assigned to</div>' +
       '<div class="chip-row" style="margin-bottom:20px;">' +
         getActiveMembers().map(function(m) {
