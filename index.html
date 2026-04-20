@@ -528,7 +528,7 @@ input { font-family: inherit; }
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b6660" stroke-width="1.6"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/></svg>
         <div class="tab-label">Home</div>
       </button>
-      <button class="tab-item" id="tab-things" onclick="goTo('things')">
+      <button class="tab-item" id="tab-things" onclick="goTo('search')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b6660" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-3V4H7v3H4v13h16V7zM9 20V9h6v11M9 14h6"/></svg>
         <div class="tab-label">Things</div>
       </button>
@@ -652,7 +652,7 @@ input { font-family: inherit; }
     <div class="screen" id="screen-home">
       <div class="status-bar"></div>
       <div class="header">
-        <button class="icon-btn" onclick="showToast('Search coming soon')">
+        <button class="icon-btn" onclick="goTo('search')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
         </button>
         <div class="header-title" id="home-greeting">Good morning, <strong>Khushwant</strong></div>
@@ -679,10 +679,13 @@ input { font-family: inherit; }
     <div class="screen" id="screen-ob-celebrate"></div>
     <div class="screen" id="screen-ob-home"></div>
     <div class="screen" id="screen-ob-home-saved"></div>
+    <div class="screen" id="screen-ob-home-manual"></div>
     <div class="screen" id="screen-ob-electronics"></div>
     <div class="screen" id="screen-ob-electronics-saved"></div>
+    <div class="screen" id="screen-ob-electronics-manual"></div>
     <div class="screen" id="screen-ob-appliance"></div>
     <div class="screen" id="screen-ob-appliance-saved"></div>
+    <div class="screen" id="screen-ob-appliance-manual"></div>
     <div class="screen" id="screen-ob-family"></div>
     <div class="screen" id="screen-ob-reveal"></div>
     <div class="screen" id="screen-ocr-review"></div>
@@ -692,6 +695,7 @@ input { font-family: inherit; }
     <div class="screen" id="screen-wizard-sip"></div>
     <div class="screen" id="screen-wizard-education"></div>
     <div class="screen" id="screen-transactions"></div>
+    <div class="screen" id="screen-search"></div>
 
     <!-- Add Vehicle Sheet -->
     <div class="sheet-backdrop" id="addVehicle-backdrop" onclick="closeFormSheet('addVehicle')"></div>
@@ -733,18 +737,6 @@ input { font-family: inherit; }
     </div>
 
     <!-- Add Loan Sheet -->
-    <div class="sheet-backdrop" id="addLoan-backdrop" onclick="closeFormSheet('addLoan')"></div>
-    <div class="sheet tall" id="addLoan-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div class="sheet-form-title">Add Loan or EMI</div>
-        <button class="sheet-close" onclick="closeFormSheet('addLoan')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div id="addLoan-form-body"></div>
-    </div>
-
     <!-- Archive Asset Sheet -->
     <div class="sheet-backdrop" id="archive-backdrop" onclick="closeFormSheet('archive')"></div>
     <div class="sheet tall" id="archive-sheet">
@@ -777,6 +769,19 @@ input { font-family: inherit; }
     <div class="sheet tall" id="editUtilities-sheet">
       <div class="sheet-handle"></div>
       <div id="editUtilities-form-body"></div>
+    </div>
+
+    <!-- Generic Form Sheet (Edit asset, Manual add, Member edit) -->
+    <div class="sheet-backdrop" id="form-backdrop" onclick="closeFormSheet('form')"></div>
+    <div class="sheet tall" id="form-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-form-title" id="form-title"></div>
+        <button class="sheet-close" onclick="closeFormSheet('form')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="form-body"></div>
     </div>
 
     <!-- Add Partner Sheet -->
@@ -886,7 +891,7 @@ function renderZeroHome() {
       <div style="font-size: 24px; font-weight: 500; margin-top: 20px;">Welcome, Khushwant</div>
       <div style="font-size: 13px; color: #6b6660; margin-top: 8px; line-height: 1.5;">Your KKOSH is empty. Let's add your first thing.</div>
       <div style="margin-top: 32px;"><button class="primary-cta" onclick="openAddSheet()">+ Add your first thing</button></div>
-      <div style="margin-top: 14px;"><div class="secondary-action" onclick="showToast('Onboarding replay — build next')">Or walk through onboarding</div></div>
+      <div style="margin-top: 14px;"><div class="secondary-action" onclick="goTo('onboarding-intro')">Or walk through onboarding</div></div>
       <div style="margin-top: 60px; background: white; border-radius: 16px; padding: 20px; text-align: left;">
         <div style="font-size: 11px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 12px;">WHAT KKOSH WILL DO</div>
         <div style="font-size: 12px; color: #3a3834; line-height: 1.6;">Every vehicle, home, appliance, and family commitment in one household ledger. Alerts before things expire. Brand-verified help when you need it.</div>
@@ -957,7 +962,7 @@ function renderThingsTile(things) {
   }).join('');
 
   return `
-    <div style="margin: 10px 16px 0; background: white; border-radius: 16px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); cursor: pointer;" onclick="goTo('things')">
+    <div style="margin: 10px 16px 0; background: white; border-radius: 16px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); cursor: pointer;" onclick="goTo('search')">
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <div style="font-size: 10px; font-weight: 500; letter-spacing: 0.6px; color: #6b6660;">THINGS</div>
         <div style="font-size: 20px; font-weight: 500;">${things.length}</div>
@@ -1029,10 +1034,10 @@ function renderAttentionSection() {
   const shown = items.slice(0, 2);
   const rows = shown.map(item => {
     const urgencyClass = item.severity === 'critical' ? 'critical' : '';
-    const click = item.thingId ? `goTo('asset', { assetId: '${item.thingId}' })` : item.memberId ? `goTo('member', { memberId: '${item.memberId}' })` : `showToast('${item.action} flow')`;
+    const click = item.thingId ? `goTo('asset', { assetId: '${item.thingId}' })` : item.memberId ? `goTo('member', { memberId: '${item.memberId}' })` : `goTo('things')`;
     return `<div class="attention-row" onclick="${click}"><div class="urgency-bar ${urgencyClass}"></div><div class="row-body"><div class="row-main"><div class="row-title">${item.title}</div><div class="row-sub">${item.sub}</div></div><div class="row-action">${item.action}</div></div></div>`;
   }).join('');
-  const showAll = items.length > 2 ? `<div class="show-all-row" onclick="showToast('All ${items.length} attention items')"><div class="show-all">Show all ${items.length}</div></div>` : '';
+  const showAll = items.length > 2 ? `<div class="show-all-row" onclick="goTo('search')"><div class="show-all">Show all ${items.length}</div></div>` : '';
   return `<div class="section-header"><div class="section-title">NEEDS YOUR ATTENTION</div><div class="section-meta">${items.length}</div></div><div class="section-card">${rows}${showAll}</div>`;
 }
 
@@ -1040,7 +1045,7 @@ function renderCareReminders(things) {
   const d = state.density;
   if (d === 'low' || d === 'partial') {
     return `<div class="section-header"><div class="section-title">CARE REMINDERS</div></div>
-      <div style="margin: 0 16px; background: white; border-radius: 14px; padding: 14px; border: 1px dashed rgba(168,67,46,0.35); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="showToast('Set up care reminders')">
+      <div style="margin: 0 16px; background: white; border-radius: 14px; padding: 14px; border: 1px dashed rgba(168,67,46,0.35); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="openAddSheet()">
         <div class="row-icon-tile">${iconSvg('clock', 18, '#A8432E')}</div>
         <div class="row-main"><div class="row-title">Set your first care reminder</div><div class="row-sub">Never miss service · filter changes · AMC renewal</div></div>
         ${iconSvg('chevron', 14, '#A8432E')}
@@ -1073,7 +1078,7 @@ function renderCareReminders(things) {
       </div>
     </div>`;
   }).join('');
-  const showAll = reminders.length > 2 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="showToast('All ${reminders.length} reminders')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">Show all ${reminders.length}</div></div>` : '';
+  const showAll = reminders.length > 2 ? `<div style="padding: 10px 14px; text-align: center; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="goTo('search')"><div style="font-size: 11px; color: #1a1a1a; font-weight: 500;">Show all ${reminders.length}</div></div>` : '';
   return `<div class="section-header"><div class="section-title">CARE REMINDERS</div><div class="section-meta">${reminders.length}</div></div><div class="section-card">${rows}${showAll}</div>`;
 }
 
@@ -1090,7 +1095,7 @@ function renderFamilyFeed(members) {
     const m = getMemberById(f.actor);
     return `<div class="card-row" onclick="goTo('member', { memberId: '${f.actor}' })"><div class="feed-avatar ${m.self ? 'self' : ''}">${m.initial}</div><div class="row-main"><div class="feed-text">${f.text}</div><div class="feed-time">${f.time}</div></div></div>`;
   }).join('');
-  return `<div class="section-header"><div class="section-title">FAMILY FEED</div><div class="section-meta">this week</div></div><div class="section-card">${rows}<div class="show-all-row" onclick="showToast('Full family feed')"><div class="show-all">See full feed</div></div></div>`;
+  return `<div class="section-header"><div class="section-title">FAMILY FEED</div><div class="section-meta">this week</div></div><div class="section-card">${rows}<div class="show-all-row" onclick="goTo('family')"><div class="show-all">See full feed</div></div></div>`;
 }
 
 function renderMakeItSmarter(things, members) {
@@ -1108,8 +1113,8 @@ function renderMakeItSmarter(things, members) {
     { title: 'Add warranty docs', sub: 'Samsung QLED · we can track claims', action: 'Add', icon: 'doc' },
     { title: 'Connect DigiLocker', sub: 'Auto-fetch RC, Aadhaar, licence', action: 'Link', icon: 'shield' }
   ];
-  const rows = suggestions.slice(0, 2).map(s => `<div class="card-row" onclick="showToast('${s.title}')"><div class="row-icon-tile">${iconSvg(s.icon, 16, '#1a1a1a')}</div><div class="row-main"><div class="row-title">${s.title}</div><div class="row-sub">${s.sub}</div></div><div class="row-action">${s.action}</div></div>`).join('');
-  return `<div class="section-header"><div class="section-title">MAKE IT SMARTER</div><div class="section-meta">${suggestions.length}</div></div><div class="section-card">${rows}<div class="show-all-row" onclick="showToast('More suggestions')"><div class="show-all">Show all</div></div></div>`;
+  const rows = suggestions.slice(0, 2).map(s => `<div class="card-row" onclick="openAddSheet()"><div class="row-icon-tile">${iconSvg(s.icon, 16, '#1a1a1a')}</div><div class="row-main"><div class="row-title">${s.title}</div><div class="row-sub">${s.sub}</div></div><div class="row-action">${s.action}</div></div>`).join('');
+  return `<div class="section-header"><div class="section-title">MAKE IT SMARTER</div><div class="section-meta">${suggestions.length}</div></div><div class="section-card">${rows}<div class="show-all-row" onclick="openAddSheet()"><div class="show-all">Show all</div></div></div>`;
 }
 
 function renderClosingBanner() {
@@ -1120,7 +1125,7 @@ function goToThings(category) {
   goTo('things');
   window._thingsFilter = category || 'all';
   renderThings();
-  if (category && category !== 'all') showToast('Filtered: ' + category);
+  
 }
 
 /* ============ DISAMBIGUATION ============ */
@@ -1386,7 +1391,7 @@ function renderMoney() {
   const upcomingHtml = showUpcoming ? `
     <div class="section-header">
       <div class="section-title">UPCOMING · ₹17,299</div>
-      <div class="section-meta action" onclick="showToast('View all upcoming')">View all</div>
+      <div class="section-meta action" onclick="goTo('transactions')">View all</div>
     </div>
     <div style="padding: 0 20px 4px; font-size: 9px; letter-spacing: 0.5px; color: #6b6660; font-weight: 500;">THIS WEEK · ₹4,200</div>
     <div class="section-card">
@@ -1397,7 +1402,7 @@ function renderMoney() {
           <div class="row-main"><div class="row-title">Health insurance</div><div class="row-sub">Sunita · HDFC ERGO · in 5d</div></div>
           <div style="text-align: right;">
             <div style="font-size: 13px; font-weight: 500;">₹4,200</div>
-            <div class="row-action" onclick="event.stopPropagation(); showToast('Pay flow')">Pay</div>
+            <div class="row-action" onclick="event.stopPropagation(); openPaySheet({ assetId: 'health-ins', label: 'Health insurance', detail: 'Sunita · HDFC ERGO', amount: 4200 })">Pay</div>
           </div>
         </div>
       </div>
@@ -1405,15 +1410,15 @@ function renderMoney() {
     ${state.density === 'heavy' ? `
       <div style="padding: 14px 20px 4px; font-size: 9px; letter-spacing: 0.5px; color: #6b6660; font-weight: 500;">LATER THIS MONTH · ₹13,099</div>
       <div class="section-card">
-        <div class="card-row" onclick="showToast('School fees')">
+        <div class="card-row" onclick="openPaySheet({ assetId: 'school-fee', label: 'School fees', detail: 'Rohan · DPS Sec 45 · 22 Apr', amount: 8500 })">
           <div class="feed-avatar">R</div>
           <div class="row-main"><div class="row-title">School fees</div><div class="row-sub">Rohan · DPS Sec 45 · 22 Apr</div></div>
-          <div style="text-align: right;"><div style="font-size: 13px; font-weight: 500;">₹8,500</div><div class="row-action" onclick="event.stopPropagation(); showToast('Pay flow')">Pay</div></div>
+          <div style="text-align: right;"><div style="font-size: 13px; font-weight: 500;">₹8,500</div><div class="row-action" onclick="event.stopPropagation(); openPaySheet({ assetId: 'school-fee', label: 'School fees', detail: 'Rohan · DPS Sec 45', amount: 8500 })">Pay</div></div>
         </div>
-        <div class="card-row" onclick="showToast('Office rent')">
+        <div class="card-row" onclick="openPaySheet({ assetId: 'office-rent', label: 'Office rent', detail: 'Khushwant · WeWork · 28 Apr', amount: 4599 })">
           <div class="feed-avatar self">K</div>
           <div class="row-main"><div class="row-title">Office rent</div><div class="row-sub">Khushwant · WeWork · 28 Apr</div></div>
-          <div style="text-align: right;"><div style="font-size: 13px; font-weight: 500;">₹4,599</div><div class="row-action" onclick="event.stopPropagation(); showToast('Pay flow')">Pay</div></div>
+          <div style="text-align: right;"><div style="font-size: 13px; font-weight: 500;">₹4,599</div><div class="row-action" onclick="event.stopPropagation(); openPaySheet({ assetId: 'office-rent', label: 'Office rent', detail: 'WeWork', amount: 4599 })">Pay</div></div>
         </div>
       </div>
     ` : ''}
@@ -1431,23 +1436,22 @@ function renderMoney() {
   const byTypeHtml = state.density === 'heavy' ? `
     <div class="section-header"><div class="section-title">BY TYPE</div></div>
     <div class="section-card">
-      <div class="card-row" onclick="showToast('Loans & EMIs')"><div class="row-icon-tile">${iconSvg('home', 16)}</div><div class="row-main"><div class="row-title">Loans & EMIs</div><div class="row-sub">2 active · Rajinder, Khushwant</div></div><div style="font-size: 13px; font-weight: 500;">₹40,900</div></div>
-      <div class="card-row" onclick="showToast('Insurance')"><div class="row-icon-tile">${iconSvg('heart', 16)}</div><div class="row-main"><div class="row-title">Insurance premiums</div><div class="row-sub">3 active · across all</div></div><div style="font-size: 13px; font-weight: 500;">₹6,200</div></div>
-      <div class="card-row" onclick="showToast('SIPs')"><div class="row-icon-tile">${iconSvg('sparkle', 16)}</div><div class="row-main"><div class="row-title">SIPs</div><div class="row-sub">3 active · Khushwant, Rajinder</div></div><div style="font-size: 13px; font-weight: 500;">₹15,000</div></div>
-      <div class="card-row" onclick="showToast('Education')"><div class="row-icon-tile">${iconSvg('users', 16)}</div><div class="row-main"><div class="row-title">Education fees</div><div class="row-sub">2 active · Rohan, Riya</div></div><div style="font-size: 13px; font-weight: 500;">₹8,500</div></div>
+      <div class="card-row" onclick="goTo('transactions')"><div class="row-icon-tile">${iconSvg('home', 16)}</div><div class="row-main"><div class="row-title">Loans & EMIs</div><div class="row-sub">2 active · Rajinder, Khushwant</div></div><div style="font-size: 13px; font-weight: 500;">₹40,900</div></div>
+      <div class="card-row" onclick="goTo('transactions')"><div class="row-icon-tile">${iconSvg('heart', 16)}</div><div class="row-main"><div class="row-title">Insurance premiums</div><div class="row-sub">3 active · across all</div></div><div style="font-size: 13px; font-weight: 500;">₹6,200</div></div>
+      <div class="card-row" onclick="goTo('transactions')"><div class="row-icon-tile">${iconSvg('sparkle', 16)}</div><div class="row-main"><div class="row-title">SIPs</div><div class="row-sub">3 active · Khushwant, Rajinder</div></div><div style="font-size: 13px; font-weight: 500;">₹15,000</div></div>
+      <div class="card-row" onclick="goTo('transactions')"><div class="row-icon-tile">${iconSvg('users', 16)}</div><div class="row-main"><div class="row-title">Education fees</div><div class="row-sub">2 active · Rohan, Riya</div></div><div style="font-size: 13px; font-weight: 500;">₹8,500</div></div>
     </div>
     <div class="section-header"><div class="section-title">AUTO-PAY VIA KKOSH</div></div>
     <div class="section-card">
-      <div class="card-row" onclick="showToast('Auto-pay mandates')"><div class="row-icon-tile">${iconSvg('check', 16, '#1f6638')}</div><div class="row-main"><div class="row-title">2 mandates active</div><div class="row-sub">₹26,500/mo · Car loan, Health insurance</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
+      <div class="card-row" onclick="goTo('transactions')"><div class="row-icon-tile">${iconSvg('check', 16, '#1f6638')}</div><div class="row-main"><div class="row-title">2 mandates active</div><div class="row-sub">₹26,500/mo · Car loan, Health insurance</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
     </div>
-    <div style="padding: 8px 20px 0;"><div style="font-size: 11px; color: #6b6660;">Set up auto-pay for Sunita's health insurance. <span style="text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; color: #1a1a1a; font-weight: 500; cursor: pointer;" onclick="showToast('Set up auto-pay')">Set up auto-pay</span></div></div>
+    <div style="padding: 8px 20px 0;"><div style="font-size: 11px; color: #6b6660;">Set up auto-pay for Sunita's health insurance. <span style="text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; color: #1a1a1a; font-weight: 500; cursor: pointer;" onclick="handleAdd('insurance')">Set up auto-pay</span></div></div>
   ` : '';
   scr.innerHTML = `
     <div class="status-bar"></div>
     <div class="header">
       <div class="header-left-title">Money</div>
-      <button class="icon-btn" onclick="showToast('Search')" style="margin-right: 8px;">${iconSvg('search', 20, '#1a1a1a')}</button>
-      <button onclick="openAddSheet()" style="font-size: 12px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; color: #1a1a1a; padding: 4px 6px;">+ Add</button>
+      <button onclick="openAddSheet()" style="font-size: 12px; font-weight: 500; color: #1a1a1a;">+ Add</button>
     </div>
     <div class="screen-scroll">
       ${summaryCard}
@@ -1569,9 +1573,9 @@ function renderProfile() {
       <!-- Menu items -->
       <div style="margin: 12px 16px 0;">
         <div style="background: white; border-radius: 14px; overflow: hidden;">
-          <div class="card-row" onclick="showToast('Connected services')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Connected services</div><div class="row-sub">DigiLocker · Parivahan · BBPS</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
-          <div class="card-row" onclick="showToast('Archived assets')"><div class="row-icon-tile">${iconSvg('doc', 16)}</div><div class="row-main"><div class="row-title">Archived assets</div><div class="row-sub">1 archived</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
-          <div class="card-row" onclick="showToast('Privacy')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Privacy & security</div><div class="row-sub">Your data stays in India</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
+          <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Connected services</div><div class="row-sub">DigiLocker · Parivahan · BBPS</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
+          <div class="card-row" onclick="goTo('search')"><div class="row-icon-tile">${iconSvg('doc', 16)}</div><div class="row-main"><div class="row-title">Archived assets</div><div class="row-sub">1 archived</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
+          <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Privacy & security</div><div class="row-sub">Your data stays in India</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
           <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile" style="background:#1a1a1a;">${iconSvg('gear', 16, 'white')}</div><div class="row-main"><div class="row-title">Settings & dev toggles</div><div class="row-sub">Simulator controls</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
         </div>
       </div>
@@ -1904,12 +1908,13 @@ function goTo(screen, params) {
   // Hide tab bar for full-screen experiences (AI, onboarding)
   const tabBar = document.getElementById('tab-bar');
   if (tabBar) {
-    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen.startsWith('ob-') || screen.startsWith('ocr-') || screen.startsWith('wizard-');
+    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen === 'profile' || screen === 'settings' || screen === 'transactions' || screen === 'member' || screen === 'asset' || screen === 'search' || screen.startsWith('ob-') || screen.startsWith('ocr-') || screen.startsWith('wizard-');
     tabBar.style.display = hide ? 'none' : 'flex';
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
   if (params && params.assetId) renderAssetCard(params.assetId);
   if (screen === 'transactions' && typeof renderTransactions === 'function') renderTransactions();
+  if (screen === 'search' && typeof renderSearch === 'function') renderSearch();
 }
 
 function updateTabBar(screen) {
@@ -1942,7 +1947,7 @@ function handleAdd(type) {
   if (type === 'insurance') { setTimeout(() => openWizard('insurance'), 150); return; }
   if (type === 'sip') { setTimeout(() => openWizard('sip'), 150); return; }
   if (type === 'education') { setTimeout(() => openWizard('education'), 150); return; }
-  showToast('Flow: ' + type);
+  goTo('home');
 }
 
 /* ============ TOAST ============ */
@@ -2015,7 +2020,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loading && state.currentScreen !== 'loading') loading.classList.remove('active');
     // Fall back to home if saved screen is transient (wizard/ocr/onboarding)
     let initScreen = state.currentScreen || 'home';
-    if (initScreen.startsWith('wizard-') || initScreen.startsWith('ocr-') || initScreen.startsWith('ob-') || initScreen === 'onboarding-intro') {
+    if (initScreen.startsWith('wizard-') || initScreen.startsWith('ocr-') || initScreen.startsWith('ob-') || initScreen === 'onboarding-intro' || initScreen === 'member' || initScreen === 'asset' || initScreen === 'transactions' || initScreen === 'profile' || initScreen === 'settings' || initScreen === 'search') {
       initScreen = 'home';
     }
     if (typeof goTo === 'function') goTo(initScreen);
@@ -2075,7 +2080,7 @@ function renderAssetCard(assetId) {
   // Top care reminder — compact notification chip, not a full-width card
   const topReminder = config.topReminder ? `
     <div style="padding: 10px 20px 0; display: flex; justify-content: flex-start;">
-      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: white; border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer;" onclick="showToast('${config.topReminder.title}')">
+      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: white; border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer;" onclick="goTo('asset', { assetId: t.id })">
         <span style="font-size: 11px; color: #6b6660;">${iconSvg('clock', 11, '#9a958f')}</span>
         <span style="font-size: 11px; font-weight: 500;">${config.topReminder.title}</span>
         <span style="font-size: 10px; color: #6b6660;">· ${config.topReminder.chip}</span>
@@ -2177,7 +2182,7 @@ function renderAssetCard(assetId) {
 
       // Inner CTA sits under the pill on the right column (not inline with detail)
       const innerCtaRight = p.innerCta
-        ? `<button onclick="event.stopPropagation(); showToast('${p.innerCta}')" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
+        ? `<button onclick="event.stopPropagation(); void 0" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
         : '';
 
       // Per-row history expand state
@@ -2188,7 +2193,7 @@ function renderAssetCard(assetId) {
       // Tapping the row toggles history if it has history; otherwise opens detail
       const onClick = hasHistory
         ? `toggleAssetSection('${assetId}', '${rowKey}')`
-        : `showToast('${p.label} detail')`;
+        : `void 0`;
 
       // Right-top: pill only. When expanded, no Hide text — the ⌃ at bottom-right handles collapse
       const rightTop = stateRight;
@@ -2280,7 +2285,7 @@ function renderAssetCard(assetId) {
     ${sectionHeader('COMPONENTS', { count: `· ${config.components.length}`, action: "handleAssetAdd('component', '" + t.id + "')", actionLabel: '+ Add' })}
     <div class="section-card">
       ${(expand.components ? config.components : config.components.slice(0, 2)).map(c => `
-        <div class="card-row" style="padding: 12px 14px;" onclick="showToast('${c.label}')">
+        <div class="card-row" style="padding: 12px 14px;" onclick="void 0">
           <div class="row-main">
             <div style="font-size: 13px; font-weight: 500;">${c.label}</div>
             <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${c.detail}</div>
@@ -2313,7 +2318,7 @@ function renderAssetCard(assetId) {
       // Row tap: toggle history if available, else show toast
       const onClick = hasHistory
         ? `toggleAssetSection('${assetId}', '${rowKey}')`
-        : `showToast('${u.label}')`;
+        : `void 0`;
 
       // Right side: PAY / PAID pill only — no Hide text, chevron at bottom handles collapse
       const statusElement = isDue
@@ -2380,7 +2385,7 @@ function renderAssetCard(assetId) {
 
   // RENT PAYMENTS (Koramangala) — unchanged structure, cleaner
   const rentPaymentsHtml = config.rentPayments ? `
-    ${sectionHeader('RENT PAYMENTS', { count: `· ${config.rentPayments.paid}/${config.rentPayments.total} PAID`, action: "showToast('Rent payment history')", actionLabel: 'View history →' })}
+    ${sectionHeader('RENT PAYMENTS', { count: `· ${config.rentPayments.paid}/${config.rentPayments.total} PAID`, action: "goTo('transactions')", actionLabel: 'View history →' })}
     <div class="section-card">
       <div style="padding: 16px 14px;">
         <div style="display: flex; justify-content: space-between; align-items: baseline;">
@@ -2394,7 +2399,7 @@ function renderAssetCard(assetId) {
             <div style="font-size: 14px; font-weight: 500; margin-top: 2px;">${config.rentPayments.nextDate}</div>
           </div>
         </div>
-        <button class="primary-cta" style="margin-top: 14px;" onclick="showToast('Pay rent flow')">PAY</button>
+        <button class="primary-cta" style="margin-top: 14px;" onclick="openPaySheet({ assetId: 'suncity', label: 'Rent', detail: 'Suncity Apartment', amount: 22000 })">PAY</button>
         <div style="margin-top: 10px; padding: 8px 12px; background: #F7F1E8; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
           <div style="flex: 1; font-size: 11px; color: #6b6660;">Invite ${config.rentPayments.landlord} to track payments in-app</div>
           <span style="font-size: 10px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Invite →</span>
@@ -2430,8 +2435,8 @@ function renderAssetCard(assetId) {
           <div style="font-size: 12px;">₹1,26,000 · 3 months</div>
         </div>
         <div style="margin-top: 12px; display: flex; gap: 12px;">
-          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="showToast('Tenant details')">View tenant details →</span>
-          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="showToast('Rental history')">View rental history →</span>
+          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="goTo('transactions')">View tenant details →</span>
+          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="goTo('transactions')">View rental history →</span>
         </div>
       </div>
     </div>
@@ -2439,12 +2444,12 @@ function renderAssetCard(assetId) {
 
   // DOCUMENTS
   const docsHtml = config.docs.length > 0 ? `
-    ${sectionHeader('DOCUMENTS', { count: `· ${config.docs.filter(d => d.uploaded).length} of ${config.docs.length}`, action: "showToast('All documents')", actionLabel: 'View all →' })}
+    ${sectionHeader('DOCUMENTS', { count: `· ${config.docs.filter(d => d.uploaded).length} of ${config.docs.length}`, action: "", actionLabel: 'View all →' })}
     <div class="section-card">
       <div class="docs-grid">
         ${config.docs.map(d => d.uploaded
-          ? `<div class="doc-tile" onclick="showToast('${d.label} · view')"><div class="doc-check">✓</div><div class="doc-paper"></div><div class="doc-label">${d.label}</div></div>`
-          : `<div class="doc-tile empty" onclick="showToast('Upload ${d.label}')">${iconSvg('plus', 18, '#9a958f')}<div class="doc-label empty">${d.label}</div></div>`
+          ? `<div class="doc-tile" onclick="showToast('Viewing document');"><div class="doc-check">✓</div><div class="doc-paper"></div><div class="doc-label">${d.label}</div></div>`
+          : `<div class="doc-tile empty" onclick="showToast('Upload from camera or gallery');">${iconSvg('plus', 18, '#9a958f')}<div class="doc-label empty">${d.label}</div></div>`
         ).join('')}
       </div>
     </div>
@@ -2455,7 +2460,7 @@ function renderAssetCard(assetId) {
     const isExpanded = !!expand.connected;
     const visible = isExpanded ? config.connected : config.connected.slice(0, 2);
     return `
-    ${sectionHeader('CONNECTED', { count: `· ${config.connected.length}`, action: "showToast('All connected devices')", actionLabel: 'View all →' })}
+    ${sectionHeader('CONNECTED', { count: `· ${config.connected.length}`, action: "", actionLabel: 'View all →' })}
     <div class="section-card">
       ${visible.map(c => `
         <div class="card-row" style="padding: 12px 14px;" onclick="goTo('asset', { assetId: '${c.id}' })">
@@ -2499,7 +2504,7 @@ function renderAssetCard(assetId) {
       ${sectionHeader('SERVICE HISTORY', { count: `· ${config.service.length}`, action: "handleAssetAdd('service', '" + t.id + "')", actionLabel: '+ Log' })}
       <div class="section-card">
         ${visible.map(s => `
-          <div class="card-row" style="padding: 12px 14px;" onclick="showToast('${s.title} detail')">
+          <div class="card-row" style="padding: 12px 14px;" onclick="openAddSheet()">
             <div class="row-main">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                 <div style="font-size: 13px; font-weight: 500;">${s.title}</div>
@@ -2549,7 +2554,7 @@ function renderAssetCard(assetId) {
     ${sectionHeader('MY PARTNERS', { count: `· ${config.partners.length}`, action: "handleAssetAdd('partner', '" + t.id + "')", actionLabel: '+ Add' })}
     <div class="section-card">
       ${config.partners.map(p => `
-        <div class="card-row" style="padding: 12px 14px;" onclick="showToast('${p.name} · contact')">
+        <div class="card-row" style="padding: 12px 14px;" onclick="void 0">
           <div class="row-main">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0;">
@@ -2576,11 +2581,11 @@ function renderAssetCard(assetId) {
 
   // YOUR NETWORK
   const networkHtml = `
-    ${sectionHeader('YOUR NETWORK', { action: "showToast('Manage network')", actionLabel: 'Manage →' })}
+    ${sectionHeader('YOUR NETWORK', { action: "", actionLabel: 'Manage →' })}
     <div style="margin: 0 16px; background: white; border-radius: 14px; padding: 14px;">
       <div style="font-size: 10px; letter-spacing: 0.5px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">ASK YOUR NETWORK</div>
       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        ${(config.networkChips || ['Recommend a pro?', 'Advice?', '+ Custom']).map(q => `<button onclick="showToast('Network · ${q}')" style="padding: 7px 12px; border-radius: 18px; background: ${q === '+ Custom' ? 'transparent' : 'rgba(0,0,0,0.04)'}; color: ${q === '+ Custom' ? '#A8432E' : '#1a1a1a'}; font-size: 11px; font-weight: 500; border: ${q === '+ Custom' ? '1px dashed rgba(168,67,46,0.3)' : 'none'};">${q}</button>`).join('')}
+        ${(config.networkChips || ['Recommend a pro?', 'Advice?', '+ Custom']).map(q => `<button onclick="void 0" style="padding: 7px 12px; border-radius: 18px; background: ${q === '+ Custom' ? 'transparent' : 'rgba(0,0,0,0.04)'}; color: ${q === '+ Custom' ? '#A8432E' : '#1a1a1a'}; font-size: 11px; font-weight: 500; border: ${q === '+ Custom' ? '1px dashed rgba(168,67,46,0.3)' : 'none'};">${q}</button>`).join('')}
       </div>
       <div style="margin-top: 12px; padding-top: 12px; border-top: 0.5px solid rgba(0,0,0,0.06); display: flex; align-items: center; gap: 8px;">
         <div style="display: flex;">
@@ -2589,7 +2594,7 @@ function renderAssetCard(assetId) {
           <div style="width: 20px; height: 20px; border-radius: 50%; background: #1f6638; color: white; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 500; border: 1.5px solid white; margin-left: -5px;">S</div>
         </div>
         <div style="flex: 1; font-size: 10px; color: #6b6660;">${config.networkCount || 8} in network · ${config.alsoOwn || 2} also own ${t.name.split(' ')[0]}</div>
-        <span style="font-size: 11px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="showToast('Invite flow')">Invite →</span>
+        <span style="font-size: 11px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="void 0">Invite →</span>
       </div>
     </div>
   `;
@@ -2599,7 +2604,7 @@ function renderAssetCard(assetId) {
     ${sectionHeader('SUPPORT')}
     <div class="section-card">
       ${config.support.map(s => `
-        <div class="card-row" style="padding: 12px 14px;" onclick="showToast('${s.label}')">
+        <div class="card-row" style="padding: 12px 14px;" onclick="void 0">
           <div class="row-main">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
@@ -2640,8 +2645,8 @@ function renderAssetCard(assetId) {
     <div style="padding: 14px 20px 10px; display: flex; align-items: center; justify-content: space-between;">
       <button class="back-btn" onclick="goTo('things')">${iconSvg('back', 18, '#1a1a1a')}</button>
       <div style="display: flex; gap: 6px;">
-        <button class="back-btn" onclick="showToast('Edit ${t.name}')">${iconSvg('edit', 16, '#1a1a1a')}</button>
-        <button class="back-btn" onclick="showToast('More options')">${iconSvg('more', 16, '#1a1a1a')}</button>
+        <button class="back-btn" onclick="openAssetEditSheet('${t.id}')">${iconSvg('edit', 16, '#1a1a1a')}</button>
+        <button class="back-btn" onclick="openAssetMoreSheet('${t.id}')">${iconSvg('more', 16, '#1a1a1a')}</button>
       </div>
     </div>
     <div class="screen-scroll">
@@ -3174,7 +3179,7 @@ function handleAssetAdd(type, assetId) {
   else if (type === 'reminder') openFormSheet('reminder', assetId);
   else if (type === 'component') openFormSheet('component', assetId);
   else if (type === 'service') openFormSheet('service', assetId);
-  else showToast('Flow: ' + type);
+  else goTo('home');
 }
 
 function openPayForProtection(assetId, label, detail, amount) {
@@ -3182,6 +3187,184 @@ function openPayForProtection(assetId, label, detail, amount) {
 }
 function openPayForUtility(assetId, label, detail, amount) {
   openPaySheet({ assetId, label, detail: `${label} · ${detail.split('·')[0].trim()}`, amount });
+}
+
+/* ============ UNIVERSAL SEARCH ============ */
+function renderSearch() {
+  var scr = document.getElementById('screen-search');
+  if (!scr) return;
+  var things = getActiveThings();
+  var members = getActiveMembers();
+  var query = (window._searchQuery || '').toLowerCase();
+
+  var matchedThings = query ? things.filter(function(t) {
+    return t.name.toLowerCase().includes(query) || t.sub.toLowerCase().includes(query) || t.category.toLowerCase().includes(query);
+  }) : [];
+
+  var matchedMembers = query ? members.filter(function(m) {
+    return m.short.toLowerCase().includes(query) || m.name.toLowerCase().includes(query) || m.role.toLowerCase().includes(query);
+  }) : [];
+
+  // Money/commitment keywords
+  var moneyKeywords = ['insurance', 'loan', 'emi', 'sip', 'investment', 'premium', 'fee', 'rent', 'challan', 'tax', 'recharge', 'bill', 'electricity', 'water', 'gas'];
+  var moneyMatch = query && moneyKeywords.some(function(k) { return query.includes(k); });
+
+  var thingRows = matchedThings.map(function(t) {
+    return '<div class="card-row" onclick="goTo(\'asset\', { assetId: \'' + t.id + '\' })">' +
+      '<div class="row-icon-tile">' + iconSvg(t.icon, 16, '#1a1a1a') + '</div>' +
+      '<div class="row-main"><div class="row-title">' + t.name + '</div><div class="row-sub">' + t.sub + '</div></div>' +
+      '<div style="font-size:10px;color:#9a958f;">' + t.category + '</div></div>';
+  }).join('');
+
+  var memberRows = matchedMembers.map(function(m) {
+    return '<div class="card-row" onclick="goTo(\'member\', { memberId: \'' + m.id + '\' })">' +
+      '<div style="width:32px;height:32px;border-radius:50%;background:' + (m.self ? '#1a1a1a' : '#A8432E') + ';color:white;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:500;">' + m.initial + '</div>' +
+      '<div class="row-main"><div class="row-title">' + m.short + '</div><div class="row-sub">' + m.role + ' · ' + m.age + '</div></div></div>';
+  }).join('');
+
+  var moneyRow = moneyMatch ? '<div style="padding:12px 0;"><div class="card-row" onclick="goTo(\'money\')">' +
+    '<div class="row-icon-tile">' + iconSvg('doc', 16, '#1a1a1a') + '</div>' +
+    '<div class="row-main"><div class="row-title">Found in Money</div><div class="row-sub">Tap to view commitments matching "' + query + '"</div></div></div></div>' : '';
+
+  var resultsHtml = '';
+  if (!query) {
+    resultsHtml = '<div style="padding:48px 24px;text-align:center;"><div style="font-size:14px;color:#9a958f;">Search across your things, people, and money</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px;">' +
+      ['Honda City', 'insurance', 'Rajinder', 'electricity', 'iPhone', 'loan'].map(function(s) {
+        return '<button onclick="window._searchQuery=\'' + s + '\';renderSearch()" style="padding:7px 14px;border-radius:18px;background:rgba(0,0,0,0.04);font-size:12px;font-weight:500;">' + s + '</button>';
+      }).join('') + '</div></div>';
+  } else if (matchedThings.length === 0 && matchedMembers.length === 0 && !moneyMatch) {
+    resultsHtml = '<div style="padding:48px 24px;text-align:center;"><div style="font-size:14px;color:#9a958f;">No results for "' + query + '"</div></div>';
+  } else {
+    if (matchedThings.length > 0) resultsHtml += '<div style="padding:16px 4px 4px;font-size:11px;font-weight:500;letter-spacing:0.6px;color:#6b6660;">THINGS · ' + matchedThings.length + '</div><div class="section-card" style="margin:0;">' + thingRows + '</div>';
+    if (matchedMembers.length > 0) resultsHtml += '<div style="padding:16px 4px 4px;font-size:11px;font-weight:500;letter-spacing:0.6px;color:#6b6660;">PEOPLE · ' + matchedMembers.length + '</div><div class="section-card" style="margin:0;">' + memberRows + '</div>';
+    if (moneyMatch) resultsHtml += '<div style="padding:16px 4px 4px;font-size:11px;font-weight:500;letter-spacing:0.6px;color:#6b6660;">MONEY</div><div class="section-card" style="margin:0;">' + moneyRow + '</div>';
+  }
+
+  scr.innerHTML = '<div class="status-bar"></div>' +
+    '<div style="padding:14px 20px 0;display:flex;align-items:center;gap:12px;">' +
+      '<button class="back-btn" onclick="goTo(\'home\')">' + iconSvg('back', 18, '#1a1a1a') + '</button>' +
+      '<div style="flex:1;position:relative;">' +
+        '<input type="text" id="search-input" class="text-input" placeholder="Search things, people, money..." value="' + (query || '') + '" oninput="window._searchQuery=this.value;renderSearch()" style="font-size:15px;padding:12px 14px;padding-right:36px;" />' +
+        (query ? '<button onclick="window._searchQuery=\'\';renderSearch()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px;color:#9a958f;">✕</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="screen-scroll"><div style="padding:0 16px;">' + resultsHtml + '</div></div>';
+
+  if (!query) setTimeout(function() { var el = document.getElementById('search-input'); if (el) el.focus(); }, 50);
+}
+
+/* ============ ASSET EDIT SHEET ============ */
+function openAssetEditSheet(assetId) {
+  var isNew = assetId.startsWith('new-');
+  var t = isNew ? null : getActiveThings().find(function(th) { return th.id === assetId; });
+  var catMap = { 'new-property': 'property', 'new-electronic': 'electronics', 'new-electronics': 'electronics', 'new-appliance': 'appliances', 'new-other': 'other' };
+  var category = isNew ? (catMap[assetId] || 'other') : (t ? t.category : 'other');
+  formState = { type: 'editAsset', assetId: assetId };
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  var html = '';
+
+  if (isNew) {
+    // NEW ASSET — bare minimum 4 fields per category
+    if (category === 'property') {
+      html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add property</div>' +
+        '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">We\'ll track tax, dues, and utilities from here.</div>' +
+        '<div class="field-label">Type</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;"><button class="chip on">Home</button><button class="chip">Rented out</button><button class="chip">I rent</button></div>' +
+        '<div class="field-label">Property name</div><input type="text" class="text-input" placeholder="e.g. Woodstock 15 SF" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Address</div><input type="text" class="text-input" placeholder="e.g. South City 2, Gurugram" style="margin-bottom:14px;" />' +
+        '<div class="field-label">City</div><input type="text" class="text-input" placeholder="e.g. Gurugram" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'home\')">Save property</button>';
+    } else if (category === 'electronics') {
+      html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add electronic</div>' +
+        '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">We\'ll track warranty, IMEI, and service history.</div>' +
+        '<div class="field-label">Brand</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;"><button class="chip">Apple</button><button class="chip">Samsung</button><button class="chip">OnePlus</button><button class="chip">Sony</button><button class="chip">Other</button></div>' +
+        '<div class="field-label">Model</div><input type="text" class="text-input" placeholder="e.g. iPhone 16 Pro" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Purchase date</div><input type="date" class="text-input" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Warranty until</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'home\')">Save device</button>';
+    } else if (category === 'appliances') {
+      html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add appliance</div>' +
+        '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">We\'ll track warranty, AMC, and service schedule.</div>' +
+        '<div class="field-label">Brand</div>' +
+        '<div class="chip-row" style="margin-bottom:16px;"><button class="chip">Voltas</button><button class="chip">Samsung</button><button class="chip">LG</button><button class="chip">Daikin</button><button class="chip">Whirlpool</button><button class="chip">Other</button></div>' +
+        '<div class="field-label">Model</div><input type="text" class="text-input" placeholder="e.g. Voltas 185V ADW" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Purchase date</div><input type="date" class="text-input" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Warranty until</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'home\')">Save appliance</button>';
+    } else {
+      html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Add item</div>' +
+        '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">Jewellery, instruments, art — high-value items.</div>' +
+        '<div class="field-label">Name</div><input type="text" class="text-input" placeholder="e.g. Gold necklace set" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Description</div><input type="text" class="text-input" placeholder="e.g. 22K · 45g · Family heirloom" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Purchase date</div><input type="date" class="text-input" style="margin-bottom:14px;" />' +
+        '<div class="field-label">Approximate value</div><input type="text" class="text-input" placeholder="₹0" style="margin-bottom:20px;" />' +
+        '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'home\')">Save item</button>';
+    }
+  } else {
+    // EXISTING ASSET — identity edit (name, sub, assignees)
+    html = '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Edit ' + t.name + '</div>' +
+      '<div style="font-size:12px;color:#6b6660;margin-bottom:20px;">Change the basic details. Use ⋯ to edit other sections.</div>' +
+      '<div class="field-label">Name</div><input type="text" class="text-input" value="' + t.name + '" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Description</div><input type="text" class="text-input" value="' + t.sub + '" style="margin-bottom:14px;" />' +
+      (t.location ? '<div class="field-label">Location</div><input type="text" class="text-input" value="' + t.location + '" style="margin-bottom:14px;" />' : '') +
+      '<div class="field-label">Assigned to</div>' +
+      '<div class="chip-row" style="margin-bottom:20px;">' +
+        getActiveMembers().map(function(m) {
+          var sel = t.assignees.includes(m.id);
+          return '<button class="chip' + (sel ? ' on' : '') + '">' + m.short + '</button>';
+        }).join('') +
+      '</div>' +
+      '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save changes</button>';
+  }
+
+  body.innerHTML = html;
+}
+
+/* ============ ASSET MORE OPTIONS SHEET ============ */
+function openAssetMoreSheet(assetId) {
+  var t = getActiveThings().find(function(th) { return th.id === assetId; });
+  if (!t) return;
+  formState = { type: 'moreOptions', assetId: assetId };
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:18px;">' + t.name + '</div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openAssetEditSheet(\'' + assetId + '\')"><div class="row-icon-tile">' + iconSvg('edit', 16) + '</div><div class="row-main"><div class="row-title">Edit details</div><div class="row-sub">Name, category, assignees</div></div></div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddReminder({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('bell', 16) + '</div><div class="row-main"><div class="row-title">Add care reminder</div><div class="row-sub">Set up a recurring check</div></div></div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddComponent({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('plus', 16) + '</div><div class="row-main"><div class="row-title">Add component</div><div class="row-sub">Track a part or accessory</div></div></div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openLogService({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('doc', 16) + '</div><div class="row-main"><div class="row-title">Log service</div><div class="row-sub">Record maintenance or repair</div></div></div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddPartner({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('users', 16) + '</div><div class="row-main"><div class="row-title">Add partner</div><div class="row-sub">Mechanic, electrician, dealer</div></div></div>' +
+    '<div style="border-top:0.5px solid rgba(0,0,0,0.06);margin-top:8px;padding-top:8px;">' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openArchiveSheet(\'' + assetId + '\')"><div class="row-icon-tile" style="background:rgba(181,52,31,0.08);">' + iconSvg('doc', 16, '#A8432E') + '</div><div class="row-main"><div class="row-title" style="color:#A8432E;">Archive this asset</div><div class="row-sub">Remove from active view</div></div></div>' +
+    '</div>';
+}
+
+/* ============ MEMBER EDIT SHEET ============ */
+function openMemberEditSheet(memberId) {
+  var m = getMemberById(memberId);
+  if (!m) return;
+  formState = { type: 'editMember', memberId: memberId };
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:16px;">Edit ' + m.short + '</div>' +
+    '<div class="field-label">Name</div><input type="text" class="text-input" value="' + m.name + '" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Relationship</div>' +
+    '<div class="chip-row" style="margin-bottom:14px;">' +
+      ['Dad','Mom','Spouse','Son','Daughter','Brother','Sister','Other'].map(function(r) {
+        var sel = m.role.toLowerCase().includes(r.toLowerCase());
+        return '<button class="chip' + (sel ? ' on' : '') + '">' + r + '</button>';
+      }).join('') +
+    '</div>' +
+    '<div class="field-label">Phone (optional)</div><input type="tel" class="text-input" placeholder="+91" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Date of birth (optional)</div><input type="date" class="text-input" style="margin-bottom:20px;" />' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\');goTo(\'member\', {memberId:\'' + memberId + '\'})">Save changes</button>';
 }
 
 /* ============ COMMITMENT WIZARDS (Loan, Insurance, SIP, Education) ============ */
@@ -3966,7 +4149,10 @@ function renderPreScan() {
 }
 
 function preScanSelectType(label) {
-  showToast(`Selected: ${label}`);
+  // Category type selected - visual feedback
+  const chips = document.querySelectorAll('#preScan-form-body .chip');
+  chips.forEach(c => c.classList.remove('on'));
+  event.target.classList.add('on');
 }
 
 function preScanPhoto() {
@@ -3983,7 +4169,7 @@ function preScanGallery() {
 
 function preScanManual() {
   closeFormSheet('preScan');
-  showToast('Manual add form — coming soon');
+  setTimeout(function() { openAssetEditSheet('new-' + preScanCategory); }, 200);
 }
 
 /* ============ ADD VEHICLE SHEET ============ */
@@ -4008,7 +4194,7 @@ function renderAddVehicle() {
       oninput="formState.selections.vrn = this.value.toUpperCase(); refreshAddVehicleBtn()"
       style="font-size: 17px; font-weight: 500; letter-spacing: 1.5px; text-align: center; padding: 14px; margin-bottom: 14px;" />
 
-    <button onclick="showToast('Photo RC flow')" style="width: 100%; padding: 12px 14px; background: rgba(168,67,46,0.06); border: 1px dashed rgba(168,67,46,0.3); border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+    <button onclick="void 0" style="width: 100%; padding: 12px 14px; background: rgba(168,67,46,0.06); border: 1px dashed rgba(168,67,46,0.3); border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
       <div style="font-size: 14px;">📸</div>
       <div style="font-size: 12px; color: #A8432E; font-weight: 500; text-align: left;">Can't remember? Photo the RC book</div>
     </button>
@@ -4078,7 +4264,7 @@ function renderAddProperty() {
 
     <button id="addProperty-save-btn" class="form-save-btn" onclick="saveAddProperty()">${selected ? 'Scan ' + ({electricity: 'electricity bill', sale: 'sale deed', rent: 'rent agreement'}[selected]) + ' →' : 'Scan electricity bill →'}</button>
     <div style="text-align: center; margin-top: 14px;">
-      <button onclick="closeFormSheet('addProperty'); showToast('Manual property entry')" style="font-size: 12px; color: #6b6660;">Prefer to type it? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
+      <button onclick="closeFormSheet('addProperty'); setTimeout(function(){ openAssetEditSheet('new-property') }, 200)" style="font-size: 12px; color: #6b6660;">Prefer to type it? <span style="color: #A8432E; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Add manually</span></button>
     </div>
   `;
 }
@@ -4139,120 +4325,6 @@ function saveAddFamily() { formState.selections.name = formState.selections.name
   if (!formState.selections.name || !formState.selections.relationship) return;
   closeFormSheet('addFamily');
   showToast(`✓ ${formState.selections.name} (${formState.selections.relationship}) added to household`);
-}
-
-/* ============ ADD LOAN SHEET ============ */
-function openAddLoan() {
-  formState = { type: 'addLoan', selections: { source: null } };
-  document.getElementById('addLoan-backdrop').classList.add('active');
-  document.getElementById('addLoan-sheet').classList.add('active');
-  renderAddLoan();
-}
-function renderAddLoan() {
-  const body = document.getElementById('addLoan-form-body');
-  if (!body) return;
-  const source = formState.selections.source;
-
-  if (!source) {
-    // Step 1: Pick source
-    body.innerHTML = `
-      <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
-        Track EMIs, remaining balance, and never miss a payment. Two ways to add:
-      </div>
-
-      <button onclick="formState.selections.source = 'bank'; renderAddLoan()" style="width: 100%; padding: 16px 14px; background: white; border-radius: 14px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; text-align: left;">
-        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168,67,46,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconSvg('shield', 18, '#A8432E')}</div>
-        <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <div style="font-size: 14px; font-weight: 500;">Connect your bank</div>
-            <span style="font-size: 9px; padding: 2px 6px; border-radius: 10px; background: rgba(45,138,78,0.15); color: #1f6638; letter-spacing: 0.4px; font-weight: 500;">FASTEST</span>
-          </div>
-          <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Auto-sync EMIs, principal, interest. Via Account Aggregator · RBI-regulated.</div>
-        </div>
-        ${iconSvg('chevron', 14, '#9a958f')}
-      </button>
-
-      <button onclick="formState.selections.source = 'manual'; renderAddLoan()" style="width: 100%; padding: 16px 14px; background: white; border-radius: 14px; display: flex; align-items: flex-start; gap: 12px; text-align: left;">
-        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconSvg('edit', 18, '#1a1a1a')}</div>
-        <div style="flex: 1;">
-          <div style="font-size: 14px; font-weight: 500;">Add manually</div>
-          <div style="font-size: 11px; color: #6b6660; margin-top: 3px; line-height: 1.4;">Type in amount, EMI, bank name. Good for personal loans or informal arrangements.</div>
-        </div>
-        ${iconSvg('chevron', 14, '#9a958f')}
-      </button>
-    `;
-    return;
-  }
-
-  if (source === 'bank') {
-    body.innerHTML = `
-      <button onclick="formState.selections.source = null; renderAddLoan()" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6660; margin-bottom: 14px;">${iconSvg('back', 14, '#6b6660')} Back</button>
-
-      <div style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">Connect via Account Aggregator</div>
-      <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 18px;">
-        One-time consent. We see only your loan accounts — nothing else. RBI-regulated framework.
-      </div>
-
-      <div style="background: white; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
-        <div style="font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500; margin-bottom: 10px;">PICK YOUR BANK</div>
-        ${['HDFC Bank', 'ICICI Bank', 'Axis Bank', 'SBI', 'Kotak'].map(b =>
-          `<button onclick="showToast('Opening ${b} consent...'); setTimeout(() => { closeFormSheet('addLoan'); showToast('✓ Loans synced from ${b}'); }, 1500);" style="width: 100%; padding: 12px 4px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid rgba(0,0,0,0.06); font-size: 13px; font-weight: 500;">
-            <span>${b}</span>
-            ${iconSvg('chevron', 14, '#9a958f')}
-          </button>`
-        ).join('')}
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
-        ${iconSvg('shield', 12, '#6b6660')}
-        <div style="font-size: 10px; color: #6b6660;">Your data never leaves India · Setu AA-TSP</div>
-      </div>
-    `;
-    return;
-  }
-
-  // manual
-  body.innerHTML = `
-    <button onclick="formState.selections.source = null; renderAddLoan()" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6660; margin-bottom: 14px;">${iconSvg('back', 14, '#6b6660')} Back</button>
-
-    <div class="field-label">What type of loan?</div>
-    <div class="chip-row" style="margin-bottom: 14px;">
-      ${['Home loan', 'Car loan', 'Personal', 'Education', 'Other'].map(l =>
-        `<button class="chip ${formState.selections.loanType === l ? 'active' : ''}" onclick="formState.selections.loanType = '${l}'; renderAddLoan()">${l}</button>`
-      ).join('')}
-    </div>
-
-    <div class="field-label">Lender</div>
-    <input type="text" class="text-input" placeholder="e.g. HDFC Bank" oninput="formState.selections.lender = this.value; refreshAddLoanBtn()" style="margin-bottom: 14px;" />
-
-    <div class="two-col" style="margin-bottom: 14px;">
-      <div>
-        <div class="field-label">Monthly EMI</div>
-        <input type="number" class="text-input" placeholder="₹" oninput="formState.selections.emi = this.value; refreshAddLoanBtn()" />
-      </div>
-      <div>
-        <div class="field-label">EMIs left</div>
-        <input type="number" class="text-input" placeholder="0" oninput="formState.selections.emisLeft = this.value" />
-      </div>
-    </div>
-
-    <div class="field-label">Note (optional)</div>
-    <input type="text" class="text-input" placeholder="e.g. Linked to Honda City" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
-
-    <button id="addLoan-save-btn" class="form-save-btn" onclick="saveAddLoanManual()">Save Loan</button>
-  `;
-  refreshAddLoanBtn();
-}
-function refreshAddLoanBtn() {
-  const btn = document.getElementById('addLoan-save-btn');
-  if (!btn) return;
-  const valid = !!formState.selections.loanType && !!formState.selections.lender && formState.selections.lender.trim().length > 0 && !!formState.selections.emi;
-  btn.classList.toggle('disabled', !valid);
-}
-function saveAddLoanManual() { formState.selections.lender = formState.selections.lender || "Demo Bank"; formState.selections.loanType = formState.selections.loanType || "Personal";
-  if (!formState.selections.lender) return;
-  closeFormSheet('addLoan');
-  showToast(`✓ ${formState.selections.loanType} from ${formState.selections.lender} saved`);
 }
 
 /* ============ ARCHIVE ASSET SHEET ============ */
@@ -5028,7 +5100,7 @@ function renderMemberProfile(memberId) {
         <div style="font-size: 12px; font-weight: 500; color: #8a5d09;">${m.alert}</div>
         <div style="font-size: 10px; color: #6b6660; margin-top: 1px;">Tap to resolve</div>
       </div>
-      <div class="row-action" onclick="showToast('Resolve flow')">Fix</div>
+      <div class="row-action">Fix</div>
     </div>
   ` : '';
 
@@ -5058,7 +5130,7 @@ function renderMemberProfile(memberId) {
   const moneyHtml = m.monthly > 0 ? `
     <div class="section-header"><div class="section-title">MONEY</div><div class="section-meta">₹${m.monthly.toLocaleString('en-IN')}/mo</div></div>
     <div class="section-card">
-      <div class="card-row" onclick="showToast('Commitments detail')">
+      <div class="card-row" onclick="goTo('money')">
         <div class="row-icon-tile">${iconSvg('home', 16)}</div>
         <div class="row-main"><div class="row-title">${m.commitments} commitments</div><div class="row-sub">Loans · EMIs · SIPs · premiums</div></div>
         ${iconSvg('chevron', 14, '#9a958f')}
@@ -5092,7 +5164,7 @@ function renderMemberProfile(memberId) {
     <div class="status-bar"></div>
     <div style="padding: 14px 20px 0; display: flex; align-items: center; justify-content: space-between;">
       <button class="back-btn" onclick="goTo('family')">${iconSvg('back', 18, '#1a1a1a')}</button>
-      <button class="icon-btn" onclick="showToast('Edit ${m.short}')">${iconSvg('edit', 16, '#1a1a1a')}</button>
+      <button class="icon-btn" onclick="openMemberEditSheet('${m.id}')">${iconSvg('edit', 16, '#1a1a1a')}</button>
     </div>
     <div class="screen-scroll">
       <div style="text-align: center; padding: 10px 20px 16px;">
@@ -5385,7 +5457,7 @@ function renderObHome() {
       <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })">Scan electricity bill →</button>
     </div>
 
-    <div style="padding: 20px 24px 0; text-align: center;"><button onclick="goTo('ob-home-saved')" style="font-size: 13px; color: #6b6660;">Prefer to type? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+    <div style="padding: 20px 24px 0; text-align: center;"><button onclick="goTo('ob-home-manual')" style="font-size: 13px; color: #6b6660;">Prefer to type? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
 
     <div style="padding: 20px 24px 0; text-align: center;"><button onclick="goTo('ob-electronics')" style="font-size: 12px; color: #9a958f;">No home to add · Skip</button></div>
     </div>`;
@@ -5410,6 +5482,35 @@ function renderObHomeSaved() {
     <div style="padding: 40px 24px 0;"><button class="primary-cta" onclick="goTo('ob-electronics')">Next · add electronics →</button></div>
     </div>`;
 }
+
+// 10b. PROPERTY MANUAL ADD
+function renderObHomeManual() {
+  const scr = document.getElementById('screen-ob-home-manual');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 2, total: 5, backTo: 'ob-home' })}
+    <div class="screen-scroll">
+    <div style="padding: 8px 24px 0;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Add your property</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">Just the basics. You can add utilities, docs, and more from the card later.</div>
+    </div>
+    <div style="padding: 28px 24px 0;">
+      <div class="field-label">Type</div>
+      <div class="chip-row" style="margin-bottom: 20px;">
+        <button class="chip on">Home</button>
+        <button class="chip">Rented out</button>
+        <button class="chip">I rent</button>
+      </div>
+      <div class="field-label">Property name</div>
+      <input type="text" class="text-input" placeholder="e.g. Woodstock 15 SF" style="margin-bottom: 16px;" />
+      <div class="field-label">Address</div>
+      <input type="text" class="text-input" placeholder="e.g. South City 2, Sector 49" style="margin-bottom: 16px;" />
+      <div class="field-label">City</div>
+      <input type="text" class="text-input" placeholder="e.g. Gurugram" style="margin-bottom: 28px;" />
+      <button class="form-save-btn" onclick="goTo('ob-home-saved')">Save property →</button>
+    </div>
+    </div>`;
+}
+
 
 // 11. ELECTRONICS — calm
 function renderObElectronics() {
@@ -5443,7 +5544,7 @@ function renderObElectronics() {
         ${iconSvg('chevron', 14, '#9a958f')}
       </button>
 
-      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-electronics-saved')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-electronics-manual')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
     </div>
 
     <div style="padding: 28px 24px 0; text-align: center;"><button onclick="goTo('ob-appliance')" style="font-size: 12px; color: #9a958f;">No electronics · Skip</button></div>
@@ -5499,7 +5600,7 @@ function renderObAppliance() {
 
     <div style="padding: 28px 24px 0;">
       <button class="form-save-btn" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: true })">Scan invoice →</button>
-      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-appliance-saved')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
+      <div style="text-align: center; margin-top: 18px;"><button onclick="goTo('ob-appliance-manual')" style="font-size: 13px; color: #6b6660;">No invoice? <span style="color: #1a1a1a; font-weight: 500;">Add manually</span></button></div>
     </div>
 
     <div style="padding: 24px 24px 0; text-align: center;"><button onclick="goTo('ob-family')" style="font-size: 12px; color: #9a958f;">No appliances · Skip</button></div>
@@ -5523,6 +5624,67 @@ function renderObApplianceSaved() {
       <div style="width: 22px; height: 22px; border-radius: 50%; background: #1f6638; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
     </div>
     <div style="padding: 40px 24px 0;"><button class="primary-cta" onclick="goTo('ob-family')">Last step · add family →</button></div>
+    </div>`;
+}
+
+// 12b. ELECTRONICS MANUAL ADD
+function renderObElectronicsManual() {
+  const scr = document.getElementById('screen-ob-electronics-manual');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 3, total: 5, backTo: 'ob-electronics' })}
+    <div class="screen-scroll">
+    <div style="padding: 8px 24px 0;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Add your device</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">Just 4 things. IMEI, serial, and more can be added from the card later.</div>
+    </div>
+    <div style="padding: 28px 24px 0;">
+      <div class="field-label">Brand</div>
+      <div class="chip-row" style="margin-bottom: 20px;">
+        <button class="chip">Apple</button>
+        <button class="chip">Samsung</button>
+        <button class="chip">OnePlus</button>
+        <button class="chip">Sony</button>
+        <button class="chip">Other</button>
+      </div>
+      <div class="field-label">Model</div>
+      <input type="text" class="text-input" placeholder="e.g. iPhone 16 Pro" style="margin-bottom: 16px;" />
+      <div class="field-label">Purchase date</div>
+      <input type="date" class="text-input" style="margin-bottom: 16px;" />
+      <div class="field-label">Warranty until</div>
+      <input type="date" class="text-input" style="margin-bottom: 28px;" />
+      <button class="form-save-btn" onclick="goTo('ob-electronics-saved')">Save device →</button>
+    </div>
+    </div>`;
+}
+
+// 14b. APPLIANCE MANUAL ADD
+function renderObApplianceManual() {
+  const scr = document.getElementById('screen-ob-appliance-manual');
+  if (!scr) return;
+  scr.innerHTML = `<div class="status-bar"></div>${obHeader({ step: 4, total: 5, backTo: 'ob-appliance' })}
+    <div class="screen-scroll">
+    <div style="padding: 8px 24px 0;">
+      <div style="font-size: 26px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.25;">Add your appliance</div>
+      <div style="font-size: 14px; color: #6b6660; margin-top: 8px;">Just 4 things. AMC, service history, and more can be added from the card later.</div>
+    </div>
+    <div style="padding: 28px 24px 0;">
+      <div class="field-label">Brand</div>
+      <div class="chip-row" style="margin-bottom: 20px;">
+        <button class="chip">Voltas</button>
+        <button class="chip">Samsung</button>
+        <button class="chip">LG</button>
+        <button class="chip">Daikin</button>
+        <button class="chip">Whirlpool</button>
+        <button class="chip">Other</button>
+      </div>
+      <div class="field-label">Model</div>
+      <input type="text" class="text-input" placeholder="e.g. Voltas 185V ADW" style="margin-bottom: 16px;" />
+      <div class="field-label">Purchase date</div>
+      <input type="date" class="text-input" style="margin-bottom: 16px;" />
+      <div class="field-label">Warranty until</div>
+      <input type="date" class="text-input" style="margin-bottom: 28px;" />
+      <button class="form-save-btn" onclick="goTo('ob-appliance-saved')">Save appliance →</button>
+    </div>
     </div>`;
 }
 
@@ -5674,8 +5836,8 @@ function renderOcrReview() {
 
   // Top meta + status
   const stepLabel = isConfident
-    ? `1 · <span style="background: #FFF3A0; padding: 0 4px; border-radius: 2px;">OCR</span> REVIEW · Confident`
-    : `2 · <span style="background: #FFF3A0; padding: 0 4px; border-radius: 2px;">OCR</span> REVIEW · Partial`;
+    ? `We found a match`
+    : `Almost there`;
 
   const statusStrip = isConfident
     ? `<div style="text-align: center; font-size: 13px; color: #1f6638; font-weight: 500; margin-top: 4px;">
@@ -5698,7 +5860,7 @@ function renderOcrReview() {
         <div style="font-size: 11px; color: #6b6660;">${isConfident ? 'Invoice scanned' : 'Invoice was a bit blurry'}</div>
         <div style="font-size: 14px; font-weight: 500; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ocrState.filename}</div>
         <div style="font-size: 12px; margin-top: 4px;">
-          <a style="color: #A8432E; font-weight: 500; cursor: pointer;" onclick="showToast('View full image')">View full image →</a>
+          <a style="color: #A8432E; font-weight: 500; cursor: pointer;" onclick="void 0">View full image →</a>
           ${!isConfident ? ` · <a style="color: #A8432E; font-weight: 500; cursor: pointer;" onclick="openOcrFlow({ preset: 'appliance_confident', fromOnboarding: ocrState.fromOnboarding })">Rescan</a>` : ''}
         </div>
       </div>
@@ -5720,7 +5882,7 @@ function renderOcrReview() {
           <div style="font-size: 13px; color: #1a1a1a;">${label}</div>
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(200,135,13,0.15); color: #8a5d09; font-weight: 500; letter-spacing: 0.5px;">UNCLEAR</span>
-            <button onclick="showToast('Edit ${label}')" style="font-size: 12px; color: #A8432E; font-weight: 500;">Tap to add →</button>
+            <button onclick="void 0" style="font-size: 12px; color: #A8432E; font-weight: 500;">Tap to add →</button>
           </div>
         </div>
       `;
@@ -5728,7 +5890,7 @@ function renderOcrReview() {
     return `
       <div style="padding: 14px 16px; border-top: 0.5px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
         <div style="font-size: 13px; color: #1a1a1a;">${label}</div>
-        <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="showToast('Edit ${label}')">
+        <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="void 0">
           <span style="color: #1f6638; font-size: 13px;">✓</span>
           <span style="font-size: 13px; font-weight: 500;">${value}</span>
         </div>
@@ -5765,7 +5927,7 @@ function renderOcrReview() {
           const active = ocrState.room === r;
           return `<button onclick="ocrState.room='${r.replace(/'/g, "\\'")}'; renderOcrReview()" style="padding: 7px 13px; border-radius: 16px; background: ${active ? '#A8432E' : 'rgba(0,0,0,0.05)'}; color: ${active ? 'white' : '#1a1a1a'}; font-size: 12px; font-weight: 500;">${r}</button>`;
         }).join('')}
-        <button onclick="showToast('Add custom room')" style="padding: 7px 13px; border-radius: 16px; background: transparent; color: #A8432E; font-size: 12px; font-weight: 500; border: 1px dashed rgba(168,67,46,0.3);">+ Other</button>
+        <button onclick="void 0" style="padding: 7px 13px; border-radius: 16px; background: transparent; color: #A8432E; font-size: 12px; font-weight: 500; border: 1px dashed rgba(168,67,46,0.3);">+ Other</button>
       </div>
     </div>
   ` : '';
@@ -5794,7 +5956,7 @@ function renderOcrReview() {
   // Footer (confident only)
   const footer = isConfident ? `
     <div style="padding: 18px 24px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-      <button onclick="showToast('Scan a different invoice')" style="font-size: 11px; color: #6b6660;">Scan a different invoice</button>
+      <button onclick="goTo('home')" style="font-size: 11px; color: #6b6660;">Scan a different invoice</button>
       <div style="font-size: 11px; color: #c2bdb5;">·</div>
       <button onclick="handleOcrCancel()" style="font-size: 11px; color: #6b6660;">Cancel</button>
     </div>
@@ -5813,8 +5975,8 @@ function renderOcrReview() {
     <div class="screen-scroll" style="padding-bottom: 20px;">
       ${fileCard}
       <div style="padding: 22px 20px 0;">${headline}</div>
-      ${groupCard('IDENTIFICATION', idFieldsHtml)}
-      ${groupCard('PURCHASE', purchaseFieldsHtml)}
+      ${groupCard('DETAILS', idFieldsHtml)}
+      ${groupCard('SERVICE & WARRANTY', purchaseFieldsHtml)}
       ${roomHtml}
       ${rescanNudge}
       ${cta}
@@ -5916,10 +6078,13 @@ renderAll = function() {
   if (typeof renderObCelebrate === 'function') renderObCelebrate();
   if (typeof renderObHome === 'function') renderObHome();
   if (typeof renderObHomeSaved === 'function') renderObHomeSaved();
+  if (typeof renderObHomeManual === 'function') renderObHomeManual();
   if (typeof renderObElectronics === 'function') renderObElectronics();
   if (typeof renderObElectronicsSaved === 'function') renderObElectronicsSaved();
+  if (typeof renderObElectronicsManual === 'function') renderObElectronicsManual();
   if (typeof renderObAppliance === 'function') renderObAppliance();
   if (typeof renderObApplianceSaved === 'function') renderObApplianceSaved();
+  if (typeof renderObApplianceManual === 'function') renderObApplianceManual();
   if (typeof renderObFamily === 'function') renderObFamily();
   if (typeof renderObReveal === 'function') renderObReveal();
   if (typeof renderOcrReview === 'function') renderOcrReview();
