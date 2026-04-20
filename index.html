@@ -2311,20 +2311,20 @@ function renderAssetCard(assetId) {
 
     const renderUtilRow = (u) => {
       const isDue = u.state === 'due';
+      const isSalary = u.isSalary || false;
       const rowKey = `util_${u.label.replace(/[^a-z0-9]/gi, '_')}`;
       const isRowExpanded = !!expand[rowKey];
       const hasHistory = u.history && u.history.length > 0;
 
-      // Row tap: toggle history if available, else show toast
       const onClick = hasHistory
         ? `toggleAssetSection('${assetId}', '${rowKey}')`
         : `void 0`;
 
-      // Right side: PAY / PAID pill only — no Hide text, chevron at bottom handles collapse
-      const statusElement = isDue
-        ? `<button onclick="event.stopPropagation(); openPayForUtility('${assetId}', '${u.label.replace(/'/g, "\\'")}', '${u.detail.replace(/'/g, "\\'")}', ${u.amount})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`
-        : `<span class="state-pill active">PAID</span>`;
-      const rightCluster = statusElement;
+      const payCta = isSalary
+        ? `<button onclick="event.stopPropagation(); openUpiPayFlow({ label: '${u.label.replace(/'/g, "\\'")}', detail: 'Monthly salary', amount: ${u.amount}, upiId: '${u.upiId || ''}' })" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`
+        : `<button onclick="event.stopPropagation(); openPayForUtility('${assetId}', '${u.label.replace(/'/g, "\\'")}', '${u.detail.replace(/'/g, "\\'")}', ${u.amount})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`;
+
+      const statusElement = isDue ? payCta : `<span class="state-pill active">PAID</span>`;
 
       const historyAffordance = hasHistory
         ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5;">${isRowExpanded ? '⌃' : '⌄'}</div>`
@@ -2334,14 +2334,18 @@ function renderAssetCard(assetId) {
         ? `${u.detail} · <span style="color: #1a1a1a; font-weight: 500;">₹${u.amount.toLocaleString('en-IN')}</span>`
         : `${u.detail} · ₹${u.amount.toLocaleString('en-IN')}`;
 
+      const labelHtml = isSalary
+        ? `<span style="font-size: 12px; margin-right: 4px;">👤</span>${u.label}`
+        : u.label;
+
       if (isDue) {
         return `<div class="attention-row" style="position: relative;" onclick="${onClick}">
           <div class="urgency-bar"></div>
           <div class="row-body" style="gap: 12px; align-items: flex-start;">
             <div class="row-main">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <div style="font-size: 13px; font-weight: 500;">${u.label}</div>
-                ${rightCluster}
+                <div style="font-size: 13px; font-weight: 500;">${labelHtml}</div>
+                ${statusElement}
               </div>
               <div style="font-size: 11px; color: #8a5d09; margin-top: 3px;">${detail}</div>
               ${isRowExpanded && hasHistory ? renderHistoryBlock(u.history) : ''}
@@ -2353,8 +2357,8 @@ function renderAssetCard(assetId) {
       return `<div class="card-row" style="padding: 12px 14px; align-items: flex-start; position: relative;" onclick="${onClick}">
         <div class="row-main">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <div style="font-size: 13px; font-weight: 500;">${u.label}</div>
-            ${rightCluster}
+            <div style="font-size: 13px; font-weight: 500;">${labelHtml}</div>
+            ${statusElement}
           </div>
           <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${detail}</div>
           ${isRowExpanded && hasHistory ? renderHistoryBlock(u.history) : ''}
@@ -2365,7 +2369,7 @@ function renderAssetCard(assetId) {
 
     return `
       <div class="section-header">
-        <div class="section-title">UTILITIES & DUES</div>
+        <div class="section-title">UTILITIES</div>
         ${t.category === 'property' ? `<button onclick="openEditUtilities('${assetId}')" style="font-size: 11px; color: #1a1a1a; font-weight: 500;">+ Add / Edit</button>` : ''}
       </div>
       <div class="section-card">
@@ -2549,7 +2553,7 @@ function renderAssetCard(assetId) {
     `;
   })() : '';
 
-  // MY PARTNERS — no avatar circles, name + trust pill + role; phone/chat right
+  // MY PARTNERS — service contacts only. Name + trust pill + role; phone/chat right
   const partnersHtml = config.partners.length > 0 ? `
     ${sectionHeader('MY PARTNERS', { count: `· ${config.partners.length}`, action: "handleAssetAdd('partner', '" + t.id + "')", actionLabel: '+ Add' })}
     <div class="section-card">
@@ -2806,33 +2810,35 @@ function renderPartnerForm(assetId) {
   const body = document.getElementById('partner-form-body');
   if (!body) return;
   const quick = getQuickAddOptions(assetId, 'partner');
-  const selectedRole = formState.selections.role || '';
+  const sel = formState.selections;
+  const selectedRole = sel.role || '';
+
   const chips = quick.partners.map(p =>
     `<button class="chip ${selectedRole === p ? 'active' : ''}" onclick="updateFormSelection('role', '${p}')">${p}</button>`
   ).join('');
+
   body.innerHTML = `
     <div class="field-label">Role</div>
     <div class="chip-row">${chips}</div>
     <input type="text" class="text-input" placeholder="Or type a role..." value="${selectedRole && !quick.partners.includes(selectedRole) ? selectedRole : ''}" oninput="formState.selections.role = this.value" style="margin-bottom: 16px;" />
 
     <div class="field-label">Name</div>
-    <input type="text" class="text-input" id="partner-name" placeholder="e.g. Ramesh Auto Works" oninput="formState.selections.name = this.value; refreshPartnerBtn()" style="margin-bottom: 16px;" />
+    <input type="text" class="text-input" id="partner-name" placeholder="e.g. Ramesh Auto Works" value="${sel.name || ''}" oninput="formState.selections.name = this.value; refreshPartnerBtn()" style="margin-bottom: 14px;" />
 
-    <div class="field-label">Phone (optional)</div>
-    <input type="tel" class="text-input" placeholder="+91 98765 43210" oninput="formState.selections.phone = this.value" style="margin-bottom: 4px;" />
+    <div class="field-label">Phone</div>
+    <input type="tel" class="text-input" placeholder="+91 98765 43210" value="${sel.phone || ''}" oninput="formState.selections.phone = this.value" style="margin-bottom: 4px;" />
 
-    <button id="partner-save-btn" class="form-save-btn" onclick="savePartner()">Save Partner</button>
+    <button id="partner-save-btn" class="form-save-btn" onclick="savePartner()" style="margin-top: 16px;">Save Partner</button>
   `;
   refreshPartnerBtn();
 }
 function refreshPartnerBtn() {
   const btn = document.getElementById('partner-save-btn');
   if (!btn) return;
-  const valid = !!formState.selections.name && formState.selections.name.trim().length > 0 && !!formState.selections.role;
-  btn.classList.toggle('disabled', !valid);
 }
-function savePartner() { formState.selections.name = formState.selections.name || "Demo Partner"; formState.selections.role = formState.selections.role || "Service";
-  if (!formState.selections.name || !formState.selections.role) return;
+function savePartner() {
+  formState.selections.name = formState.selections.name || "Demo Partner";
+  formState.selections.role = formState.selections.role || "Service";
   closeFormSheet('partner');
   showToast(`${formState.selections.name} added as ${formState.selections.role}`);
 }
@@ -3698,19 +3704,6 @@ const utilityProviders = {
     { name: 'Mahanagar Gas', region: 'Mumbai' },
     { name: 'Adani Gas', region: 'Multiple cities' }
   ],
-  'Internet': [
-    { name: 'Airtel Xstream', region: 'Pan India' },
-    { name: 'JioFiber', region: 'Pan India' },
-    { name: 'ACT Fibernet', region: 'South & West' },
-    { name: 'BSNL', region: 'Pan India' },
-    { name: 'Tata Play Fiber', region: 'Metro cities' }
-  ],
-  'DTH / Cable TV': [
-    { name: 'Tata Play', region: 'Pan India' },
-    { name: 'Airtel Digital TV', region: 'Pan India' },
-    { name: 'Dish TV', region: 'Pan India' },
-    { name: 'Sun Direct', region: 'South India' }
-  ],
   'Cooking gas (cylinder)': [
     { name: 'Indane (IOCL)', region: 'Pan India' },
     { name: 'HP Gas', region: 'Pan India' },
@@ -3723,8 +3716,6 @@ const consumerLabels = {
   'Electricity': { label: 'Consumer number / CA number', placeholder: 'e.g. 1234567890', hint: 'Found on your electricity bill, top-right corner' },
   'Water': { label: 'Consumer ID', placeholder: 'e.g. WS-2024-00456', hint: 'Found on your water bill' },
   'Gas (piped)': { label: 'BP Number', placeholder: 'e.g. 3012345678', hint: 'Found on your gas bill or meter' },
-  'Internet': { label: 'Account number / Customer ID', placeholder: 'e.g. ACT-GGN-78901', hint: 'Found in your ISP app or bill' },
-  'DTH / Cable TV': { label: 'Subscriber ID / VC number', placeholder: 'e.g. 012345678901', hint: 'Found on your set-top box or app' },
   'Cooking gas (cylinder)': { label: 'LPG Consumer number', placeholder: 'e.g. 204-123-456789', hint: '17-digit number on your passbook' }
 };
 
@@ -3748,48 +3739,47 @@ function renderUtilityList(body, t) {
     { label: 'Electricity', icon: '⚡' },
     { label: 'Water', icon: '💧' },
     { label: 'Gas (piped)', icon: '🔥' },
-    { label: 'Internet', icon: '📶' },
-    { label: 'Society fee', icon: '🏢' },
-    { label: 'Maintenance', icon: '🔧' },
-    { label: 'Cook salary', icon: '👨‍🍳' },
-    { label: 'Maid salary', icon: '🧹' },
-    { label: 'Driver salary', icon: '🚗' },
-    { label: 'Cooking gas (cylinder)', icon: '🔴' },
-    { label: 'DTH / Cable TV', icon: '📺' },
-    { label: 'Gardener', icon: '🌿' }
+    { label: 'Society maintenance', icon: '🏢' },
+    { label: 'Maid', icon: '🧹' },
+    { label: 'Cook', icon: '👨‍🍳' },
+    { label: 'Driver', icon: '🚗' },
+    { label: 'Cooking gas (cylinder)', icon: '🔴' }
   ];
 
   const activeLabels = new Set(config.utilities ? config.utilities.map(u => u.label) : []);
   const activeRows = allPossible.filter(u => activeLabels.has(u.label) || utilityToggles[u.label]);
   const availableToAdd = allPossible.filter(u => !activeLabels.has(u.label) && !utilityToggles[u.label]);
+  const domesticHelp = ['Maid', 'Cook', 'Driver'];
 
   body.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-      <div style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Utilities & Dues</div>
+      <div style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Utilities</div>
       <button class="sheet-close" onclick="closeFormSheet('editUtilities')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
 
     <div style="font-size: 12px; color: #6b6660; line-height: 1.5; margin-bottom: 14px;">
-      Manage utilities for ${t.name}. Connected utilities auto-fetch bills via BBPS.
+      Manage utilities for ${t.name}. BBPS utilities auto-fetch bills. Domestic help is tracked manually with monthly reminders.
     </div>
 
     ${activeRows.length > 0 ? `
       <div style="background: white; border-radius: 14px; padding: 2px 14px 8px; margin-bottom: 14px;">
         <div style="padding: 12px 0 8px; font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500;">CONFIGURED</div>
-        ${activeRows.map(u => `
+        ${activeRows.map(u => {
+          const isDomestic = domesticHelp.includes(u.label);
+          return `
           <div style="padding: 12px 0; display: flex; align-items: center; gap: 12px; border-top: 0.5px solid rgba(0,0,0,0.06);">
             <div style="font-size: 16px; width: 24px; text-align: center;">${u.icon}</div>
             <div style="flex: 1;">
               <div style="font-size: 13px; font-weight: 500;">${u.label}</div>
-              <div style="font-size: 10px; color: #1f6638; margin-top: 1px;">Connected via BBPS</div>
+              <div style="font-size: 10px; color: ${isDomestic ? '#6b6660' : '#1f6638'}; margin-top: 1px;">${isDomestic ? 'Manual · monthly reminder' : 'Connected via BBPS'}</div>
             </div>
             <button onclick="toggleUtility('${u.label}', false)" style="width: 44px; height: 26px; border-radius: 13px; background: #1a1a1a; position: relative;">
               <div style="width: 20px; height: 20px; border-radius: 50%; background: white; position: absolute; top: 3px; right: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></div>
             </button>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
     ` : ''}
 
@@ -3798,12 +3788,13 @@ function renderUtilityList(body, t) {
         <div style="padding: 12px 0 8px; font-size: 10px; letter-spacing: 0.6px; color: #6b6660; font-weight: 500;">ADD NEW</div>
         ${availableToAdd.map(u => {
           const hasBbps = !!utilityProviders[u.label];
+          const isDomestic = domesticHelp.includes(u.label);
           return `
-          <div style="padding: 12px 0; display: flex; align-items: center; gap: 12px; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="${hasBbps ? `startUtilityConfig('${u.label}')` : `addManualUtility('${u.label}')`}">
+          <div style="padding: 12px 0; display: flex; align-items: center; gap: 12px; border-top: 0.5px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="${isDomestic ? `openDomesticHelpForm('${u.label}')` : hasBbps ? `startUtilityConfig('${u.label}')` : `addManualUtility('${u.label}')`}">
             <div style="font-size: 16px; width: 24px; text-align: center;">${u.icon}</div>
             <div style="flex: 1;">
               <div style="font-size: 13px; color: #3a3834;">${u.label}</div>
-              <div style="font-size: 9px; color: #9a958f; margin-top: 1px;">${hasBbps ? 'Connect via BBPS' : 'Manual tracking'}</div>
+              <div style="font-size: 9px; color: #9a958f; margin-top: 1px;">${isDomestic ? 'Track salary + pay via UPI' : hasBbps ? 'Connect via BBPS' : 'Manual tracking'}</div>
             </div>
             <div style="font-size: 11px; color: #A8432E; font-weight: 500;">+ Add</div>
           </div>
@@ -3923,6 +3914,128 @@ function toggleUtility(label, on) {
 function saveEditUtilities() {
   closeFormSheet('editUtilities');
   showToast('✓ Utilities updated');
+}
+
+/* ============ DOMESTIC HELP FORM (Maid / Cook / Driver) ============ */
+function openDomesticHelpForm(role) {
+  utilityConfigStep = 'domestic';
+  const body = document.getElementById('editUtilities-form-body');
+  if (!body) return;
+  const roleLower = role.toLowerCase();
+  const placeholders = {
+    'Maid': { name: 'e.g. Sunita', amount: 'e.g. 8000', hint: 'Cleaning, mopping, dishes' },
+    'Cook': { name: 'e.g. Kamla', amount: 'e.g. 12000', hint: 'Cooking 2 meals/day' },
+    'Driver': { name: 'e.g. Ramu', amount: 'e.g. 15000', hint: 'Full-time / part-time' }
+  };
+  const ph = placeholders[role] || { name: 'Name', amount: '0', hint: '' };
+
+  body.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+      <button onclick="utilityConfigStep = 'list'; renderEditUtilities();" style="display: flex; align-items: center;">${iconSvg('back', 16, '#6b6660')}</button>
+      <div>
+        <div style="font-size: 18px; font-weight: 500;">Add ${role}</div>
+        <div style="font-size: 11px; color: #6b6660; margin-top: 2px;">${ph.hint}</div>
+      </div>
+    </div>
+
+    <div class="field-label">Name</div>
+    <input type="text" class="text-input" placeholder="${ph.name}" style="margin-bottom: 16px;" />
+
+    <div class="field-label">Monthly salary</div>
+    <input type="text" class="text-input" placeholder="₹${ph.amount}" style="margin-bottom: 16px;" />
+
+    <div class="field-label">Pay day</div>
+    <div class="chip-row" style="margin-bottom: 16px;">
+      <button class="chip on">1st</button>
+      <button class="chip">5th</button>
+      <button class="chip">10th</button>
+      <button class="chip">Last day</button>
+    </div>
+
+    <div class="field-label">Payment method</div>
+    <div style="margin-bottom: 16px;">
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; margin-bottom: 8px; text-align: left; display: flex; align-items: center; gap: 12px; border: 1.5px solid #1a1a1a;">
+        <div style="font-size: 16px;">📱</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">UPI</div>
+          <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">Pay via GPay / PhonePe / Paytm · needs their UPI ID</div>
+        </div>
+      </button>
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; margin-bottom: 8px; text-align: left; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="font-size: 16px;">💵</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">Cash</div>
+          <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">Mark as paid manually each month</div>
+        </div>
+      </button>
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; text-align: left; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="font-size: 16px;">🏦</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">Bank transfer</div>
+          <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">NEFT / IMPS · needs account details</div>
+        </div>
+      </button>
+    </div>
+
+    <div style="padding: 14px; background: rgba(0,0,0,0.03); border-radius: 12px; margin-bottom: 16px;">
+      <div style="font-size: 10px; letter-spacing: 0.4px; color: #6b6660; font-weight: 500; margin-bottom: 6px;">UPI DETAILS (optional now)</div>
+      <input type="text" class="text-input" placeholder="UPI ID · e.g. sunita@paytm" style="margin-bottom: 8px;" />
+      <div style="font-size: 9px; color: #9a958f;">You can add this later. If set, KKOSH will pre-fill payment on pay day.</div>
+    </div>
+
+    <div style="padding: 12px; background: rgba(45,138,78,0.06); border-radius: 10px; margin-bottom: 20px;">
+      <div style="font-size: 11px; color: #1f6638; line-height: 1.5;">KKOSH will remind you on the pay day each month. When you pay, mark it done — we log it to your transaction history.</div>
+    </div>
+
+    <button class="form-save-btn" onclick="utilityToggles['${role}'] = true; utilityConfigStep = 'list'; renderEditUtilities(); showToast('✓ ${role} added · monthly reminder set');">Save ${role} →</button>
+  `;
+}
+
+/* ============ PG PROVISIONING — UPI Pay Flow ============ */
+function openUpiPayFlow(context) {
+  // context: { label, detail, amount, upiId }
+  formState = { type: 'upiPay' };
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  var amt = context.amount || 0;
+  var label = context.label || 'Payment';
+  var upiId = context.upiId || '';
+
+  body.innerHTML = `
+    <div style="font-size: 18px; font-weight: 500; margin-bottom: 4px;">Pay ${label}</div>
+    <div style="font-size: 12px; color: #6b6660; margin-bottom: 20px;">${context.detail || ''}</div>
+
+    <div style="background: white; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px;">
+      <div style="font-size: 10px; color: #6b6660; letter-spacing: 0.4px; font-weight: 500;">AMOUNT</div>
+      <div style="font-size: 32px; font-weight: 500; margin-top: 6px; letter-spacing: -0.5px;">₹${amt.toLocaleString('en-IN')}</div>
+    </div>
+
+    <div class="field-label">Pay to</div>
+    <input type="text" class="text-input" value="${upiId}" placeholder="UPI ID · e.g. sunita@paytm" style="margin-bottom: 16px;" />
+
+    <div class="field-label">Pay from</div>
+    <div style="margin-bottom: 20px;">
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; margin-bottom: 8px; text-align: left; display: flex; align-items: center; gap: 12px; border: 1.5px solid #1a1a1a;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #F7F1E8; display: flex; align-items: center; justify-content: center; font-size: 14px;">G</div>
+        <div style="flex: 1;"><div style="font-size: 13px; font-weight: 500;">Google Pay</div><div style="font-size: 10px; color: #6b6660;">khushwant@okicici</div></div>
+      </button>
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; margin-bottom: 8px; text-align: left; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #F7F1E8; display: flex; align-items: center; justify-content: center; font-size: 14px;">P</div>
+        <div style="flex: 1;"><div style="font-size: 13px; font-weight: 500;">PhonePe</div><div style="font-size: 10px; color: #6b6660;">khushwant@ybl</div></div>
+      </button>
+      <button onclick="this.parentElement.querySelectorAll('button').forEach(b=>b.style.border='0.5px solid rgba(0,0,0,0.06)'); this.style.border='1.5px solid #1a1a1a';" style="width: 100%; padding: 14px; background: white; border-radius: 12px; text-align: left; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(0,0,0,0.06);">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #F7F1E8; display: flex; align-items: center; justify-content: center; font-size: 14px;">₹</div>
+        <div style="flex: 1;"><div style="font-size: 13px; font-weight: 500;">Paytm</div><div style="font-size: 10px; color: #6b6660;">9876543210@paytm</div></div>
+      </button>
+    </div>
+
+    <button class="form-save-btn" onclick="closeFormSheet('form'); showToast('₹${amt.toLocaleString('en-IN')} paid to ${label} via UPI');">Pay ₹${amt.toLocaleString('en-IN')} →</button>
+
+    <div style="text-align: center; margin-top: 14px;">
+      <div style="font-size: 9px; color: #9a958f; line-height: 1.5;">Secured by Razorpay · UPI payments are instant<br>KKOSH does not store your UPI PIN</div>
+    </div>
+  `;
 }
 
 /* ============ PRE-SCAN SHEET (Appliance / Electronics / Other) ============ */
@@ -4421,17 +4534,16 @@ function getAssetConfig(t) {
           { label: 'Overspeeding · NH-48', sub: 'Challan #DL2026-04-12 · Jan 2025', amount: 2000, status: 'Paid' },
           { label: 'No parking · CP', sub: 'Challan #DL2025-08-09 · Aug 2024', amount: 1000, status: 'Paid' }
         ]},
-        { label: 'Insurance', detail: 'HDFC ERGO · expires Oct 2026', state: 'active', history: [
+        { label: 'Insurance', detail: 'HDFC ERGO · Comprehensive · expires Oct 2026', state: 'active', history: [
           { label: 'HDFC ERGO · Oct 2025 – Oct 2026', sub: 'Comprehensive · NCB 35%', amount: 18400, status: 'Paid' },
           { label: 'HDFC ERGO · Oct 2024 – Oct 2025', sub: 'Comprehensive · NCB 25%', amount: 21200, status: 'Paid' },
           { label: 'HDFC ERGO · Oct 2023 – Oct 2024', sub: 'Comprehensive · first year', amount: 28800, status: 'Paid' }
         ]},
-        { label: 'RC Book', detail: 'DigiLocker verified', state: 'active' },
-        { label: 'FASTag', detail: 'Active · ₹840 balance', state: 'active' },
-        { label: 'Car Loan', detail: 'HDFC · ₹22,300/mo · 18 EMIs left', state: 'active' },
         { label: 'Fitness Certificate', detail: 'Valid until Mar 2028', state: 'active' },
         { label: 'Road Tax', detail: 'Valid lifetime', state: 'active' },
-        { label: 'Extended warranty', detail: 'Honda · expires Sep 2026', state: 'active' }
+        { label: 'Extended warranty', detail: 'Honda · expires Sep 2026', state: 'active' },
+        { label: 'RSA', detail: 'Honda Roadside Assist · expires Oct 2026', state: 'active' },
+        { label: 'Hypothecation', detail: 'HDFC Bank · NOC pending', state: 'due', stateLabel: 'ACTIVE' }
       ],
       components: [
         { label: 'Tyres', detail: 'MRF ZVTV · Sep 2024', brandLogo: 'mrf' },
@@ -4485,15 +4597,15 @@ function getAssetConfig(t) {
           { label: 'Jan 2026', sub: 'BSES · 440 kWh', amount: 4120, status: 'Paid' },
           { label: 'Dec 2025', sub: 'BSES · 358 kWh', amount: 3420, status: 'Paid' }
         ]},
-        { label: 'Society fee', detail: 'South City RWA · due in 6 days', amount: 1900, state: 'due', history: [
-          { label: 'Mar 2026', sub: 'South City RWA', amount: 1900, status: 'Paid' },
-          { label: 'Feb 2026', sub: 'South City RWA', amount: 1900, status: 'Paid' }
+        { label: 'Society maintenance', detail: 'South City RWA · due in 6 days', amount: 5700, state: 'due', history: [
+          { label: 'Mar 2026', sub: 'South City RWA', amount: 5700, status: 'Paid' },
+          { label: 'Feb 2026', sub: 'South City RWA', amount: 5700, status: 'Paid' }
         ]},
         { label: 'Water', detail: 'GMDA · paid 2 Apr', amount: 680, state: 'paid' },
-        { label: 'Gas', detail: 'IGL · paid 28 Mar', amount: 820, state: 'paid' },
-        { label: 'Internet', detail: 'Airtel Xstream · paid 1 Apr', amount: 1499, state: 'paid' },
-        { label: 'Maintenance', detail: 'Society · paid 1 Apr', amount: 3800, state: 'paid' },
-        { label: 'Cook salary', detail: 'Manual · paid 1 Apr', amount: 12000, state: 'paid' }
+        { label: 'Piped gas', detail: 'IGL · paid 28 Mar', amount: 820, state: 'paid' },
+        { label: 'Cook · Kamla', detail: '₹12,000/mo · paid 1 Apr', amount: 12000, state: 'paid', isSalary: true, upiId: 'kamla@paytm', payDay: '1st' },
+        { label: 'Maid · Sunita', detail: '₹8,000/mo · paid 1 Apr', amount: 8000, state: 'paid', isSalary: true, upiId: 'sunita9876@ybl', payDay: '1st' },
+        { label: 'Driver · Ramu', detail: '₹15,000/mo · due in 1d', amount: 15000, state: 'due', isSalary: true, payDay: '1st' }
       ],
       protectionSync: { source: 'MCG', time: '2h ago' },
       protection: [
@@ -4506,8 +4618,9 @@ function getAssetConfig(t) {
           { label: 'FY 2025', sub: 'Bajaj Allianz · renewed Dec 2024', amount: 8400, status: 'Paid' },
           { label: 'FY 2024', sub: 'Bajaj Allianz · renewed Dec 2023', amount: 7800, status: 'Paid' }
         ]},
-        { label: 'Encumbrance Certificate', detail: 'Last updated Oct 2024', state: 'active' },
-        { label: 'NOC · Society', detail: 'Valid through 2026', state: 'active' }
+        { label: 'Fire insurance', detail: 'Bajaj Allianz · bundled with home', state: 'active' },
+        { label: 'Structural warranty', detail: 'DLF · expires Nov 2028', state: 'active' },
+        { label: 'Home loan', detail: 'HDFC · ₹42,000/mo · 96 EMIs left', state: 'active' }
       ],
       docs: [
         { label: 'Sale Deed', uploaded: true }, { label: 'OC', uploaded: true },
@@ -4540,8 +4653,7 @@ function getAssetConfig(t) {
       ],
       partners: [
         { name: 'Rajesh', role: 'Society manager · South City 2', trusted: true },
-        { name: 'Suresh', role: 'Plumber · South City 2, Gurugram', trusted: true },
-        { name: 'Escalate to MCG', role: 'Email pre-filled with property details', role_pill: 'DRAFT', showChat: false }
+        { name: 'Suresh', role: 'Plumber · South City 2, Gurugram', trusted: true }
       ],
       support: [
         { label: 'BSES (Electricity)', detail: '1800-180-1550', brandLogo: 'bses' },
@@ -4557,15 +4669,17 @@ function getAssetConfig(t) {
       modeBadge: `<span class="state-pill" style="background: rgba(200,135,13,0.12); color: #8a5d09;">🏢 Rented out</span>`,
       utilitiesSync: { source: 'BBPS', time: '2h ago' },
       utilities: [
-        { label: 'Society fee · South City RWA', detail: 'due in 6 days', amount: 1900, state: 'due' },
-        { label: 'Property Tax · MCG', detail: 'paid Mar 15', amount: 12500, state: 'paid' }
+        { label: 'Society maintenance', detail: 'South City RWA · due in 6 days', amount: 3200, state: 'due' }
       ],
       protectionSync: { source: 'MCG', time: '2h ago' },
       protection: [
         { label: 'Property tax', detail: 'MCG · FY 2026-27 due in 22 days', state: 'due', stateLabel: 'DUE 22D' },
         { label: 'Home insurance', detail: 'ICICI Lombard · active', state: 'active' },
-        { label: 'Rental agreement', detail: 'Valid until Mar 2027', state: 'active' },
-        { label: 'Encumbrance', detail: 'Updated Nov 2024', state: 'active' }
+        { label: 'Fire insurance', detail: 'ICICI Lombard · bundled', state: 'active' },
+        { label: 'Home loan', detail: 'SBI · ₹28,000/mo · 144 EMIs left', state: 'active' },
+        { label: 'Rental agreement', detail: 'Registered · valid until Mar 2027', state: 'active' },
+        { label: 'Security deposit held', detail: '₹1,26,000 · Kumar family', state: 'active' },
+        { label: 'Tenant police verification', detail: 'Completed · Mar 2024', state: 'active' }
       ],
       rentalIncome: { amount: 42000, tenant: 'Kumar family', lastReceived: 'Apr 1, 2026' },
       docs: [
@@ -4598,10 +4712,16 @@ function getAssetConfig(t) {
       utilitiesSync: { source: 'BBPS', time: '1h ago' },
       utilities: [
         { label: 'Electricity', detail: 'BESCOM · ₹2,800 last month', amount: 2800, state: 'due' },
-        { label: 'Cooking gas', detail: 'Indane · last refill 18 Mar', amount: 1150, state: 'due' },
-        { label: 'Society fee', detail: 'Paid by landlord', amount: 0, state: 'paid' }
+        { label: 'Piped gas', detail: 'Indane · last refill 18 Mar', amount: 1150, state: 'paid' },
+        { label: 'Maid · Lakshmi', detail: '₹6,000/mo · paid 1 Apr', amount: 6000, state: 'paid', isSalary: true, payDay: '1st' },
+        { label: 'Cook · Meena', detail: '₹8,000/mo · paid 1 Apr', amount: 8000, state: 'paid', isSalary: true, payDay: '1st' }
       ],
-      protection: [],
+      protection: [
+        { label: 'Renter\'s insurance', detail: 'Not purchased', state: 'draft', stateLabel: 'EXPLORE', innerCta: 'Explore renter\'s insurance' },
+        { label: 'Rental agreement', detail: 'Mrs. Mehra · valid until Feb 2027', state: 'active' },
+        { label: 'Security deposit paid', detail: '₹76,000 · refundable on exit', state: 'active' },
+        { label: 'Lock-in period', detail: 'Ended Mar 2025', state: 'active' }
+      ],
       docs: [
         { label: 'Lease', uploaded: true }, { label: 'Deposit', uploaded: true },
         { label: 'Move-in', uploaded: true }, { label: 'Police', uploaded: false }
@@ -4619,8 +4739,7 @@ function getAssetConfig(t) {
       ],
       partners: [
         { name: 'Mrs. Mehra', role: 'Landlord · Owner · 5th Block, Bengaluru', role_pill: 'Landlord', trusted: true },
-        { name: 'Ganesh', role: 'Watchman · 5th Block', trusted: false, showChat: false },
-        { name: 'Notify landlord', role: 'Email pre-filled with maintenance iss...', role_pill: 'DRAFT', showChat: false }
+        { name: 'Ganesh', role: 'Watchman · 5th Block', trusted: false, showChat: false }
       ],
       support: [],
       networkChips: ['HRA filing tips?', 'Pest control in 5th?', '+ Custom'],
@@ -4705,7 +4824,10 @@ function getAssetConfig(t) {
         { label: 'Case / Cover · Tanishq', detail: 'Velvet box · Added 2018', brandLogo: 'tanishq' }
       ],
       protection: [
-        { label: 'Insurance', detail: 'HDFC ERGO · Valuables · active', state: 'active' }
+        { label: 'Insurance', detail: 'HDFC ERGO · Valuables floater · active', state: 'active' },
+        { label: 'Valuation certificate', detail: 'Tanishq · Dec 2024 · ₹2,70,000', state: 'active' },
+        { label: 'BIS Hallmark', detail: '22K · HUID verified', state: 'active' },
+        { label: 'Safe deposit locker', detail: 'SBI Sec 14 · Locker #412 · ₹4,500/yr', state: 'active' }
       ],
       docs: [
         { label: 'Invoice', uploaded: true }, { label: 'Certificate', uploaded: true },
@@ -4741,8 +4863,8 @@ function getAssetConfig(t) {
         { label: 'PUC Certificate', detail: 'Valid until Nov 2026', state: 'active' },
         { label: 'RC Book', detail: 'DigiLocker verified', state: 'active' },
         { label: 'Road Tax', detail: 'Valid lifetime', state: 'active' },
-        { label: 'FASTag', detail: 'Not applicable for 2W', state: 'draft', stateLabel: 'N/A' },
-        { label: 'Extended warranty', detail: 'Royal Enfield · expires Aug 2027', state: 'active' }
+        { label: 'Extended warranty', detail: 'Royal Enfield · expires Aug 2027', state: 'active' },
+        { label: 'RSA', detail: 'Royal Enfield RSA · expires Aug 2026', state: 'active' }
       ],
       components: [
         { label: 'Tyres', detail: 'MRF Nylogrip · Feb 2025' },
