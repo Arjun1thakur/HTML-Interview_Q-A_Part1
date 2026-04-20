@@ -2165,7 +2165,12 @@ function renderAssetCard(assetId) {
     other: ['Item insurance', 'Valuation certificate', 'Authentication cert', 'Safe deposit locker']
   };
   const allSlots = protectionSlots[t.category] || protectionSlots.other;
-  const emptySlots = allSlots.filter(s => !config.protection.some(p => p.label.toLowerCase().includes(s.toLowerCase().split(' ')[0])));
+  const emptySlots = allSlots.filter(s => !config.protection.some(p => {
+    const sl = s.toLowerCase();
+    const pl = p.label.toLowerCase();
+    // Match if either contains a significant word from the other
+    return sl.split(' ').some(w => w.length > 2 && pl.includes(w)) || pl.split(' ').some(w => w.length > 2 && sl.includes(w));
+  }));
 
   let protectionHtml = '';
   if (config.protection.length > 0 || emptySlots.length > 0) {
@@ -2216,18 +2221,28 @@ function renderAssetCard(assetId) {
     protectionHtml = `<div class="section-header"><div class="section-title">PROTECTION</div></div><div class="section-card"><div style="padding: 10px 14px 6px; font-size: 10px; color: ${urgentCountColor};">${countText}</div>${visibleHtml}${remainingHtml}${toggleRow}${syncFooter}</div>`;
   }
 
-  // COMPONENTS — no per-row icon, no brand logo (brand logo reserved for hero + Support only)
+  // COMPONENTS — with warranty pills and age indicators
   const componentsHtml = config.components && config.components.length > 0 ? `
     ${sectionHeader('COMPONENTS', { count: `· ${config.components.length}`, action: "handleAssetAdd('component', '" + t.id + "')", actionLabel: '+ Add' })}
     <div class="section-card">
-      ${(expand.components ? config.components : config.components.slice(0, 2)).map(c => `
-        <div class="card-row" style="padding: 12px 14px;" onclick="void 0">
+      ${(expand.components ? config.components : config.components.slice(0, 2)).map(c => {
+        const warrantyPill = c.warranty === 'active'
+          ? '<span class="state-pill active" style="font-size: 8px; padding: 2px 6px;">IN WARRANTY</span>'
+          : c.warranty === 'expired'
+          ? '<span class="state-pill expired" style="font-size: 8px; padding: 2px 6px;">EXPIRED</span>'
+          : '';
+        const ageText = c.age ? `<span style="color: #9a958f;"> · ${c.age}</span>` : '';
+        return `
+        <div class="card-row" style="padding: 12px 14px;" onclick="openEditComponent('${assetId}', '${c.label.replace(/'/g, "\\'")}')">
           <div class="row-main">
-            <div style="font-size: 13px; font-weight: 500;">${c.label}</div>
-            <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${c.detail}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="font-size: 13px; font-weight: 500;">${c.label}</div>
+              ${warrantyPill}
+            </div>
+            <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${c.detail}${ageText}</div>
           </div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
       ${config.components.length > 2 ? `<div class="show-all-row" onclick="toggleAssetSection('${assetId}', 'components')"><div class="show-all">${expand.components ? '↑ Collapse' : `Show all ${config.components.length} ↓`}</div></div>` : ''}
     </div>
   ` : '';
@@ -2650,14 +2665,15 @@ function getQuickAddOptions(assetId, type) {
   const opts = {
     vehicles: {
       reminders: ['Tyre rotation', 'Annual service', 'PUC renewal', 'Insurance renewal'],
-      partners: ['Mechanic', 'Tyre dealer', 'Cleaning', 'Insurance agent', 'RSA'],
+      partners: ['Mechanic', 'Tyre dealer', 'Body shop', 'Insurance agent'],
       components: [
         { key: 'tyres', label: 'Tyres', icon: '🛞' },
         { key: 'battery', label: 'Battery', icon: '🔋' },
-        { key: 'audio', label: 'Audio system', icon: '🎵' },
         { key: 'dashcam', label: 'Dashcam', icon: '📷' },
+        { key: 'alloys', label: 'Alloy wheels', icon: '⭕' },
+        { key: 'audio', label: 'Infotainment', icon: '🎵' },
         { key: 'seatcovers', label: 'Seat covers', icon: '🛋️' },
-        { key: 'other', label: 'Other accessory', icon: '🔧' }
+        { key: 'other', label: 'Other', icon: '🔧' }
       ]
     },
     property: {
@@ -2673,35 +2689,26 @@ function getQuickAddOptions(assetId, type) {
       ]
     },
     electronics: {
-      reminders: ['Software update', 'Battery replacement', 'Screen cleaning'],
+      reminders: ['Software update', 'Battery health check', 'Sensor cleaning'],
       partners: ['Service centre', 'Repair shop', 'Retailer'],
-      components: [
-        { key: 'case', label: 'Case / Cover', icon: '📱' },
-        { key: 'charger', label: 'Charger', icon: '🔌' },
-        { key: 'accessory', label: 'Accessory', icon: '🎧' },
-        { key: 'storage', label: 'Storage', icon: '💾' },
-        { key: 'screen', label: 'Screen guard', icon: '🛡️' },
-        { key: 'other', label: 'Other', icon: '🔧' }
-      ]
+      components: []
     },
     appliances: {
       reminders: ['Filter cleaning', 'Gas top-up', 'Service', 'AMC renewal'],
-      partners: ['Authorised service', 'Local technician', 'Cleaner'],
+      partners: ['Authorised service', 'Local technician'],
       components: [
-        { key: 'filter', label: 'Filter', icon: '🌬️' },
-        { key: 'gas', label: 'Refrigerant', icon: '❄️' },
         { key: 'motor', label: 'Motor', icon: '⚙️' },
-        { key: 'remote', label: 'Remote', icon: '📺' },
-        { key: 'cover', label: 'Cover', icon: '🛋️' },
+        { key: 'compressor', label: 'Compressor', icon: '❄️' },
         { key: 'other', label: 'Other', icon: '🔧' }
       ]
     },
     other: {
-      reminders: ['Insurance renewal', 'Appraisal', 'Cleaning'],
-      partners: ['Appraiser', 'Insurance agent', 'Cleaner'],
+      reminders: ['Insurance renewal', 'Appraisal', 'Servicing'],
+      partners: ['Appraiser', 'Insurance agent', 'Jeweller'],
       components: [
-        { key: 'case', label: 'Case / Cover', icon: '📦' },
-        { key: 'strap', label: 'Strap / Band', icon: '⌚' },
+        { key: 'case', label: 'Case / Cover / Box', icon: '📦' },
+        { key: 'strap', label: 'Chain / Strap', icon: '⌚' },
+        { key: 'strings', label: 'Strings', icon: '🎸' },
         { key: 'other', label: 'Other', icon: '🔧' }
       ]
     }
@@ -2851,25 +2858,35 @@ function renderComponentForm(assetId) {
   if (!body) return;
   const quick = getQuickAddOptions(assetId, 'component');
   const selectedType = formState.selections.componentType || '';
-  const tiles = quick.components.map(c =>
-    `<button class="form-tile ${selectedType === c.key ? 'active' : ''}" onclick="updateFormSelection('componentType', '${c.key}')">
-      <div class="form-tile-icon">${c.icon}</div>
-      <div class="form-tile-label">${c.label}</div>
-    </button>`
-  ).join('');
-  body.innerHTML = `
-    <div class="field-label">What are you adding?</div>
-    <div class="form-grid-tiles" style="margin-bottom: 18px;">${tiles}</div>
+  const hasChips = quick.components.length > 0;
 
+  const tilesHtml = hasChips ? `
+    <div class="field-label">What are you adding?</div>
+    <div class="form-grid-tiles" style="margin-bottom: 18px;">
+      ${quick.components.map(c =>
+        `<button class="form-tile ${selectedType === c.key ? 'active' : ''}" onclick="updateFormSelection('componentType', '${c.key}')">
+          <div class="form-tile-icon">${c.icon}</div>
+          <div class="form-tile-label">${c.label}</div>
+        </button>`
+      ).join('')}
+    </div>
+  ` : `
+    <div class="field-label">Component name</div>
+    <input type="text" class="text-input" placeholder="e.g. Charger, Case, Lens, Memory card" oninput="formState.selections.componentType = this.value" style="margin-bottom: 16px;" />
+  `;
+
+  body.innerHTML = `
+    <div style="font-size:11px;color:#6b6660;margin-bottom:16px;">Documenting an existing component? Just add the basics. For replacements done during service, use Log Service instead.</div>
+    ${tilesHtml}
     <div class="field-label">Brand</div>
-    <input type="text" class="text-input" placeholder="e.g. MRF, Exide, JBL" oninput="formState.selections.brand = this.value; refreshComponentBtn()" style="margin-bottom: 16px;" />
+    <input type="text" class="text-input" placeholder="e.g. MRF, Samsung, Sony" oninput="formState.selections.brand = this.value" style="margin-bottom: 16px;" />
 
     <div class="field-label">Model / spec (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. ZVTS 215/75 R15" oninput="formState.selections.model = this.value" style="margin-bottom: 16px;" />
 
     <div class="two-col" style="margin-bottom: 16px;">
       <div>
-        <div class="field-label">Installed date</div>
+        <div class="field-label">Installed / Bought</div>
         <input type="date" class="text-input" oninput="formState.selections.installedDate = this.value" />
       </div>
       <div>
@@ -2878,64 +2895,166 @@ function renderComponentForm(assetId) {
       </div>
     </div>
 
-    <div class="field-label">Note (optional)</div>
-    <input type="text" class="text-input" placeholder="e.g. Replaced all 4 tyres" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
-
     <button id="component-save-btn" class="form-save-btn" onclick="saveComponent()">Save Component</button>
   `;
-  refreshComponentBtn();
 }
-function refreshComponentBtn() {
-  const btn = document.getElementById('component-save-btn');
-  if (!btn) return;
-  const valid = !!formState.selections.componentType && !!formState.selections.brand && formState.selections.brand.trim().length > 0;
-  btn.classList.toggle('disabled', !valid);
-}
-function saveComponent() { formState.selections.brand = formState.selections.brand || "Demo brand"; formState.selections.componentType = formState.selections.componentType || "other";
-  if (!formState.selections.brand || !formState.selections.componentType) return;
+function refreshComponentBtn() {}
+function saveComponent() {
+  formState.selections.brand = formState.selections.brand || "Component";
   closeFormSheet('component');
-  showToast(`Component saved: ${formState.selections.brand}`);
+  showToast('✓ ' + formState.selections.brand + ' added');
 }
-
-/* SERVICE LOG FORM */
 function renderServiceForm(assetId) {
   const body = document.getElementById('service-form-body');
   if (!body) return;
+  const t = getThingById(assetId);
+  const config = getAssetConfig(t);
   const today = new Date().toISOString().slice(0, 10);
-  const doneBy = formState.selections.doneBy || 'khushwant';
+  const sel = formState.selections;
+  const doneBy = sel.doneBy || 'self';
+  const setReminder = sel.setReminder || false;
+  const reminderInterval = sel.reminderInterval || '6 months';
+  const addComponent = sel.addComponent || false;
   const members = getActiveMembers();
-  const doneByChips = members.map(m => {
-    const isSelected = doneBy === m.id;
-    return `<div onclick="formState.selections.doneBy = '${m.id}'; renderServiceForm('${assetId}')" style="width: 28px; height: 28px; border-radius: 50%; background: ${isSelected ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; color: ${isSelected ? 'white' : '#1a1a1a'}; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 500; cursor: pointer;">${m.initial}</div>`;
-  }).join('');
+
+  // Done by — family members AND service partner, both persistent
+  const doneBySection = (() => {
+    const existingPartners = config.partners || [];
+    const selectedPartner = sel.partnerName || '';
+    const addingNew = sel.addingNewPartner || false;
+    const isDoneByPartner = doneBy === 'partner';
+
+    // Family member chips
+    const memberChips = members.map(m => {
+      const isSelected = !isDoneByPartner && (doneBy === m.id || (doneBy === 'self' && m.self));
+      return `<div onclick="formState.selections.doneBy = '${m.id}'; formState.selections.partnerName = ''; formState.selections.addingNewPartner = false; renderServiceForm('${assetId}')" style="width: 28px; height: 28px; border-radius: 50%; background: ${isSelected ? '#1a1a1a' : 'rgba(0,0,0,0.06)'}; color: ${isSelected ? 'white' : '#1a1a1a'}; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 500; cursor: pointer;">${m.initial}</div>`;
+    }).join('');
+
+    // Partner chips
+    const partnerChips = existingPartners.map(p =>
+      `<button class="chip ${isDoneByPartner && selectedPartner === p.name ? 'active' : ''}" onclick="formState.selections.doneBy = 'partner'; formState.selections.partnerName = '${p.name.replace(/'/g, "\\'")}'; formState.selections.addingNewPartner = false; renderServiceForm('${assetId}')">${p.name}</button>`
+    ).join('');
+
+    // New partner inline form
+    const newPartnerForm = addingNew ? `
+      <div style="margin-top:10px;padding:12px;background:rgba(0,0,0,0.03);border-radius:10px;">
+        <div class="field-label">Name</div>
+        <input type="text" class="text-input" placeholder="e.g. Ravi Auto Works" value="${sel.newPartnerName || ''}" oninput="formState.selections.newPartnerName = this.value" style="margin-bottom:8px;" />
+        <div class="field-label">Role</div>
+        <div class="chip-row" style="margin-bottom:8px;">
+          ${(getQuickAddOptions(assetId, 'partner').partners || []).map(r =>
+            `<button class="chip ${(sel.newPartnerRole || '') === r ? 'active' : ''}" onclick="formState.selections.newPartnerRole = '${r}'; renderServiceForm('${assetId}')">${r}</button>`
+          ).join('')}
+        </div>
+        <div class="field-label">Phone</div>
+        <input type="tel" class="text-input" placeholder="+91" value="${sel.newPartnerPhone || ''}" oninput="formState.selections.newPartnerPhone = this.value" />
+        <div style="font-size:9px;color:#1f6638;margin-top:6px;">Will be saved to ${t ? t.name : 'this asset'}</div>
+      </div>
+    ` : '';
+
+    return `
+      <div class="field-label">Done by</div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+        ${memberChips}
+      </div>
+      <div class="field-label">Service partner</div>
+      <div style="margin-bottom:16px;">
+        <div class="chip-row">
+          ${partnerChips}
+          <button class="chip ${addingNew ? 'active' : ''}" onclick="formState.selections.doneBy = 'partner'; formState.selections.addingNewPartner = true; formState.selections.partnerName = ''; renderServiceForm('${assetId}')">+ New</button>
+        </div>
+        ${!isDoneByPartner && !addingNew ? '<div style="font-size:9px;color:#9a958f;margin-top:6px;">Select a partner or add new if service was done externally</div>' : ''}
+        ${newPartnerForm}
+      </div>
+    `;
+  })();
+
+  // Component section
+  const componentSection = addComponent ? (() => {
+    const quick = getQuickAddOptions(assetId, 'component');
+    const hasChips = quick.components.length > 0;
+    const selectedCompType = sel.compType || '';
+
+    const compChips = hasChips ? `
+      <div class="chip-row" style="margin-bottom:10px;">
+        ${quick.components.map(c =>
+          `<button class="chip ${selectedCompType === c.key ? 'active' : ''}" onclick="formState.selections.compType = '${c.key}'; renderServiceForm('${assetId}')">${c.label}</button>`
+        ).join('')}
+      </div>
+    ` : `
+      <div class="field-label">Component name</div>
+      <input type="text" class="text-input" placeholder="e.g. Charger, Lens, Filter" value="${sel.compName || ''}" oninput="formState.selections.compName = this.value" style="margin-bottom:10px;" />
+    `;
+
+    return `
+      <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,0.03);border-radius:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:500;">Component replaced / added</div>
+          <button onclick="formState.selections.addComponent = false; renderServiceForm('${assetId}')" style="font-size:10px;color:#6b6660;">Remove</button>
+        </div>
+        ${compChips}
+        <div class="field-label">Brand</div>
+        <input type="text" class="text-input" placeholder="e.g. MRF, Exide" value="${sel.compBrand || ''}" oninput="formState.selections.compBrand = this.value" style="margin-bottom:10px;" />
+        <div class="two-col">
+          <div><div class="field-label">Installed</div><input type="date" class="text-input" value="${sel.compDate || today}" oninput="formState.selections.compDate = this.value" /></div>
+          <div><div class="field-label">Warranty until</div><input type="date" class="text-input" oninput="formState.selections.compWarranty = this.value" /></div>
+        </div>
+      </div>
+    `;
+  })() : `
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,0.03);border-radius:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="formState.selections.addComponent = true; renderServiceForm('${assetId}')">
+      <div><div style="font-size:12px;font-weight:500;">Component replaced?</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Track the new part with warranty</div></div>
+      <div style="font-size:11px;color:#A8432E;font-weight:500;">+ Add</div>
+    </div>
+  `;
+
+  // Reminder section
+  const reminderSection = setReminder ? `
+    <div style="margin-top:8px;padding:14px;background:rgba(45,138,78,0.06);border-radius:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:500;color:#1f6638;">Recurring reminder</div>
+        <button onclick="formState.selections.setReminder = false; renderServiceForm('${assetId}')" style="font-size:10px;color:#6b6660;">Remove</button>
+      </div>
+      <div class="field-label">Repeat every</div>
+      <div class="chip-row">
+        ${['3 months', '6 months', '1 year', '2 years'].map(i =>
+          `<button class="chip ${reminderInterval === i ? 'active' : ''}" onclick="formState.selections.reminderInterval = '${i}'; renderServiceForm('${assetId}')">${i}</button>`
+        ).join('')}
+      </div>
+    </div>
+  ` : `
+    <div style="margin-top:8px;padding:14px;background:rgba(0,0,0,0.03);border-radius:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="formState.selections.setReminder = true; renderServiceForm('${assetId}')">
+      <div><div style="font-size:12px;font-weight:500;">Set recurring reminder?</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Get reminded when due again</div></div>
+      <div style="font-size:11px;color:#A8432E;font-weight:500;">+ Add</div>
+    </div>
+  `;
 
   body.innerHTML = `
     <div class="field-label">What was done?</div>
-    <input type="text" class="text-input dark-border" placeholder="e.g. Oil change, Gas top-up" oninput="formState.selections.task = this.value; refreshServiceBtn()" style="margin-bottom: 16px;" autofocus />
+    <input type="text" class="text-input dark-border" placeholder="e.g. Oil change, Tyre replacement, Gas top-up" value="${sel.task || ''}" oninput="formState.selections.task = this.value; refreshServiceBtn()" style="margin-bottom: 16px;" autofocus />
 
     <div class="two-col" style="margin-bottom: 16px;">
       <div>
         <div class="field-label">Date</div>
-        <input type="date" class="text-input" value="${today}" oninput="formState.selections.date = this.value" />
+        <input type="date" class="text-input" value="${sel.date || today}" oninput="formState.selections.date = this.value" />
       </div>
       <div>
         <div class="field-label">Cost (₹)</div>
-        <input type="number" class="text-input" placeholder="0" oninput="formState.selections.cost = this.value" />
+        <input type="number" class="text-input" placeholder="0" value="${sel.cost || ''}" oninput="formState.selections.cost = this.value" />
       </div>
     </div>
 
-    <div class="field-label">Done by</div>
-    <div style="display: flex; gap: 6px; margin-bottom: 16px;">
-      ${doneByChips}
-    </div>
+    ${doneBySection}
 
     <div class="field-label">Note (optional)</div>
-    <input type="text" class="text-input" placeholder="e.g. Used Mobil 1 synthetic" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
+    <input type="text" class="text-input" placeholder="e.g. Used Mobil 1 synthetic" value="${sel.note || ''}" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
-    <button id="service-save-btn" class="form-save-btn" onclick="saveService()">Save Service Log</button>
+    ${componentSection}
+    ${reminderSection}
+
+    <button id="service-save-btn" class="form-save-btn" onclick="saveService()" style="margin-top: 16px;">Save</button>
   `;
-  formState.selections.date = today;
-  formState.selections.doneBy = doneBy;
+  if (!sel.date) formState.selections.date = today;
   refreshServiceBtn();
 }
 function refreshServiceBtn() {
@@ -2944,13 +3063,17 @@ function refreshServiceBtn() {
   const valid = !!formState.selections.task && formState.selections.task.trim().length > 0;
   btn.classList.toggle('disabled', !valid);
 }
-function saveService() { formState.selections.task = formState.selections.task || "Demo service";
+function saveService() {
+  formState.selections.task = formState.selections.task || "Service";
   if (!formState.selections.task) return;
   closeFormSheet('service');
-  const who = getMemberById(formState.selections.doneBy || 'khushwant');
-  showToast(`Service logged: ${formState.selections.task} · by ${who ? (who.self ? 'you' : who.short) : 'you'}`);
+  const sel = formState.selections;
+  const parts = [sel.task + ' logged'];
+  if (sel.addComponent && sel.compBrand) parts.push(sel.compBrand + ' added');
+  if (sel.doneBy === 'partner' && sel.addingNewPartner && sel.newPartnerName) parts.push(sel.newPartnerName + ' saved');
+  if (sel.setReminder) parts.push('reminder every ' + (sel.reminderInterval || '6 months'));
+  showToast('✓ ' + parts.join(' · '));
 }
-
 /* PAY SHEET */
 let payContext = null;
 function openPaySheet(ctx) {
@@ -3147,11 +3270,28 @@ function openEditProtection(assetId, protLabel) {
   var isNew = !existing;
   var title = isNew ? 'Configure ' + protLabel : 'Edit ' + protLabel;
   var provider = existing ? (existing.detail.split('·')[0] || '').trim() : '';
-  var detail = existing ? existing.detail : '';
+  var isExpired = existing && existing.state === 'expired';
+
+  // Determine if renewal reminder makes sense for this type
+  var renewableTypes = ['insurance', 'puc', 'fitness', 'warranty', 'amc', 'rsa', 'care'];
+  var isRenewable = renewableTypes.some(function(r) { return protLabel.toLowerCase().includes(r); });
+
+  var reminderHtml = isRenewable ? (
+    '<div style="margin-top:16px;padding:14px;background:rgba(45,138,78,0.06);border-radius:12px;cursor:pointer;" id="prot-reminder-section">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<div style="font-size:13px;font-weight:500;color:#1f6638;">Renewal reminder</div>' +
+        '<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:rgba(45,138,78,0.12);border-radius:8px;font-size:9px;color:#1f6638;font-weight:500;">ON</div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:#1f6638;line-height:1.5;">KKOSH will remind you 30 days before expiry so you have time to renew.</div>' +
+    '</div>'
+  ) : '';
+
+  var actionLabel = isNew ? 'Save ' + protLabel : isExpired ? 'Mark as renewed' : 'Update';
+  var toastMsg = isNew ? protLabel + ' configured' : isExpired ? protLabel + ' renewed · reminder set' : protLabel + ' updated';
 
   body.innerHTML =
     '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + title + '</div>' +
-    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + '</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + (isExpired ? ' · <span style="color:#A8432E;">Expired</span>' : '') + '</div>' +
     '<div class="field-label">Provider / Issuer</div>' +
     '<input type="text" class="text-input" value="' + provider + '" placeholder="e.g. HDFC ERGO" style="margin-bottom:14px;" />' +
     '<div class="field-label">Policy / Certificate number</div>' +
@@ -3163,8 +3303,9 @@ function openEditProtection(assetId, protLabel) {
     '<div class="field-label">Premium / Amount</div>' +
     '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
     '<div class="field-label">Sum insured / Coverage</div>' +
-    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:20px;" />' +
-    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + protLabel + (isNew ? ' configured' : ' updated') + '\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">' + (isNew ? 'Save ' + protLabel : 'Update') + '</button>';
+    '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:4px;" />' +
+    reminderHtml +
+    '<button class="form-save-btn" style="margin-top:16px;" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + toastMsg + '\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">' + actionLabel + '</button>';
 }
 
 function openAddProtectionForm(assetId) {
@@ -3268,6 +3409,39 @@ function openEditConnected(assetId, connectedId, currentLocation) {
     '<div class="field-label">Or type a location</div>' +
     '<input type="text" class="text-input" placeholder="e.g. Master bedroom" value="' + (currentLocation || '') + '" style="margin-bottom:20px;" />' +
     '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + name + ' moved\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save location</button>';
+}
+
+/* ============ EDIT COMPONENT ============ */
+function openEditComponent(assetId, compLabel) {
+  var t = getThingById(assetId);
+  if (!t) return;
+  var config = getAssetConfig(t);
+  var existing = config.components ? config.components.find(function(c) { return c.label === compLabel; }) : null;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + compLabel + '</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + t.name + '</div>' +
+    '<div class="field-label">Brand</div>' +
+    '<input type="text" class="text-input" value="' + (existing ? (existing.detail.split('·')[0] || '').trim() : '') + '" placeholder="e.g. MRF, Exide" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Model / Variant</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. ZVTV 195/55 R16" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Install / Purchase date</div>' +
+    '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Warranty until</div>' +
+    '<div class="chip-row" style="margin-bottom:14px;">' +
+      '<button class="chip on">Has warranty</button>' +
+      '<button class="chip">No warranty</button>' +
+    '</div>' +
+    '<input type="date" class="text-input" placeholder="Warranty expiry date" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Notes</div>' +
+    '<input type="text" class="text-input" placeholder="e.g. Replaced at 40,000 km" style="margin-bottom:20px;" />' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button class="form-save-btn" style="flex:1;" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + compLabel + ' updated\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save</button>' +
+      '<button onclick="closeFormSheet(\'form\'); showToast(\'' + compLabel + ' removed\')" style="padding:14px 18px;border-radius:14px;background:rgba(181,52,31,0.06);color:#A8432E;font-size:12px;font-weight:500;">Remove</button>' +
+    '</div>';
 }
 
 /* ============ EDIT DETAILS ============ */
@@ -4691,9 +4865,9 @@ function getAssetConfig(t) {
         { label: 'Hypothecation', detail: 'HDFC Bank · NOC pending', state: 'due', stateLabel: 'ACTIVE' }
       ],
       components: [
-        { label: 'Tyres', detail: 'MRF ZVTV · Sep 2024', brandLogo: 'mrf' },
-        { label: 'Battery', detail: 'Exide MagicEye · Jan 2024', brandLogo: 'exide' },
-        { label: 'Engine Oil', detail: 'Mobil 1 · 14 Jan 2025', brandLogo: 'mobil' }
+        { label: 'Tyres', detail: 'MRF ZVTV · Installed Sep 2024', warranty: 'active', age: '7 months' },
+        { label: 'Battery', detail: 'Exide MagicEye · Installed Jan 2024', warranty: 'active', age: '1.3 years' },
+        { label: 'Dashcam', detail: 'Viofo A129 · Installed Mar 2025', warranty: 'active', age: '1 year' }
       ],
       docs: [
         { label: 'Insurance', uploaded: true }, { label: 'RC', uploaded: true },
@@ -4929,8 +5103,10 @@ function getAssetConfig(t) {
         { label: 'Compressor warranty', detail: 'Active until 2029', state: 'active' }
       ],
       components: [
-        { label: 'Air filter', detail: 'Last cleaned 14 Mar 2026' },
-        { label: 'Refrigerant gas', detail: 'R32 · topped up Nov 2025' }
+        { label: 'Motor', detail: 'Voltas OEM · Installed Apr 2024', warranty: 'active', age: '2 years' },
+        { label: 'Air filter', detail: 'Last cleaned 14 Mar 2026', warranty: null, age: '1 month' },
+        { label: 'Refrigerant gas', detail: 'R32 · Topped up Nov 2025', warranty: null, age: '5 months' },
+        { label: 'Remote', detail: 'Voltas OEM · Original', warranty: null, age: '2 years' }
       ],
       docs: [
         { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
@@ -4966,7 +5142,7 @@ function getAssetConfig(t) {
     return { ...base,
       brandLogo: 'tanishq',
       components: [
-        { label: 'Case / Cover · Tanishq', detail: 'Velvet box · Added 2018', brandLogo: 'tanishq' }
+        { label: 'Case / Box', detail: 'Tanishq velvet box · Added 2018', warranty: null, age: '8 years' }
       ],
       protection: [
         { label: 'Insurance', detail: 'HDFC ERGO · Valuables floater · active', state: 'active' },
@@ -5012,9 +5188,8 @@ function getAssetConfig(t) {
         { label: 'RSA', detail: 'Royal Enfield RSA · expires Aug 2026', state: 'active' }
       ],
       components: [
-        { label: 'Tyres', detail: 'MRF Nylogrip · Feb 2025' },
-        { label: 'Battery', detail: 'Exide Riders · stock' },
-        { label: 'Engine oil', detail: 'Castrol Power1 · last change Jan 2026' }
+        { label: 'Tyres', detail: 'MRF Nylogrip · Installed Feb 2025', warranty: 'active', age: '14 months' },
+        { label: 'Battery', detail: 'Exide Riders · Stock OEM', warranty: 'expired', age: '3.7 years' }
       ],
       docs: [
         { label: 'Insurance', uploaded: true }, { label: 'RC', uploaded: true },
@@ -5088,10 +5263,10 @@ function getAssetConfig(t) {
         ]}
       ],
       components: [
-        { label: 'Body', detail: 'Sony A7 IV · Serial A7IV***4521' },
-        { label: 'Lens · Sony FE 24-70mm', detail: 'f/2.8 GM · bought Mar 2024' },
-        { label: 'Battery · NP-FZ100', detail: '2 packs · original' },
-        { label: 'Memory · Sony Tough', detail: '128GB CFexpress Type A' }
+        { label: 'Lens · Sony FE 24-70mm', detail: 'f/2.8 GM · Bought Mar 2024', warranty: 'active', age: '2 years' },
+        { label: 'Extra battery · NP-FZ100', detail: '2 packs · Original Sony', warranty: 'active', age: '2 years' },
+        { label: 'Memory · Sony Tough', detail: '128GB CFexpress Type A', warranty: 'active', age: '2 years' },
+        { label: 'Charger', detail: 'Sony BC-QZ1 · Original', warranty: null, age: '2 years' }
       ],
       docs: [
         { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
@@ -5134,9 +5309,9 @@ function getAssetConfig(t) {
         { label: 'Installation warranty', detail: 'Wall mount · expires Aug 2025', state: 'expired' }
       ],
       components: [
-        { label: 'Remote · SolarCell', detail: 'Samsung Smart remote' },
-        { label: 'Wall mount', detail: 'Samsung WMN-M22EB/XL · installed Aug 2022' },
-        { label: 'Soundbar · HW-Q800C', detail: 'Connected via HDMI eARC' }
+        { label: 'Remote', detail: 'Samsung SolarCell Smart · Original', warranty: 'active', age: '3.7 years' },
+        { label: 'Soundbar', detail: 'Samsung HW-Q800C · HDMI eARC', warranty: 'active', age: '2 years' },
+        { label: 'Wall mount', detail: 'Samsung WMN-M22EB/XL · Aug 2022', warranty: 'expired', age: '3.7 years' }
       ],
       docs: [
         { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
@@ -5179,9 +5354,9 @@ function getAssetConfig(t) {
         { label: 'AMC', detail: 'Not purchased', state: 'draft', stateLabel: 'EXPLORE', innerCta: 'Explore AMC plans' }
       ],
       components: [
-        { label: 'Water filter', detail: 'Samsung HAF-CIN · last changed Oct 2025' },
-        { label: 'Ice maker', detail: 'Working · internal' },
-        { label: 'Door seals', detail: 'Original · cleaned Jan 2026' }
+        { label: 'Compressor', detail: 'Samsung Digital Inverter · OEM', warranty: 'active', age: '4.8 years' },
+        { label: 'Water filter', detail: 'Samsung HAF-CIN · Changed Oct 2025', warranty: null, age: '6 months' },
+        { label: 'Door seals', detail: 'Original · Cleaned Jan 2026', warranty: null, age: '4.8 years' }
       ],
       docs: [
         { label: 'Invoice', uploaded: true }, { label: 'Warranty', uploaded: true },
