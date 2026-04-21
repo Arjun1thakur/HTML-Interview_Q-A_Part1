@@ -36,17 +36,20 @@ input { font-family: inherit; }
 .capture .tab-bar { position: relative !important; }
 .capture .sheet-backdrop, .capture .sheet, .capture .toast { display: none !important; }
 .sidebar {
-  width: 280px; background: white; border-radius: 16px; padding: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08); font-size: 12px; line-height: 1.6;
-  max-height: 700px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
 }
-.sidebar h3 { font-size: 15px; margin-bottom: 4px; }
-.sidebar .tagline { font-size: 10px; color: #A8432E; letter-spacing: 0.3px; margin-bottom: 16px; }
-.sidebar h4 { font-size: 10px; letter-spacing: 0.5px; color: #6b6660; margin: 14px 0 6px; font-weight: 500; }
-.sidebar ul { padding-left: 14px; color: #3a3834; }
-.sidebar li { margin-bottom: 4px; font-size: 11px; }
-.sidebar .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 14px 0 4px; }
+.size-btn {
+  width: 68px; padding: 12px 0; border-radius: 12px; background: rgba(0,0,0,0.06);
+  text-align: center; cursor: pointer; transition: all 0.15s ease;
+}
+.size-btn.active { background: #1a1a1a; color: white; }
+.size-btn:hover:not(.active) { background: rgba(0,0,0,0.1); }
+.size-label { font-size: 9px; font-weight: 500; letter-spacing: 0.3px; }
+.size-name { font-size: 11px; font-weight: 600; margin-top: 2px; }
+.size-dim { font-size: 8px; color: #9a958f; margin-top: 1px; }
+.size-btn.active .size-dim { color: rgba(255,255,255,0.5); }
 @media (max-width: 900px) { .sidebar { display: none; } }
+
 
 /* Screens */
 .screen {
@@ -470,45 +473,21 @@ input { font-family: inherit; }
 <div class="app-wrapper">
 
   <div class="sidebar">
-    <h3>KKOSH Simulator</h3>
-    <div class="tagline">Ownership. Organised.</div>
-
-    <h4>TRY THESE</h4>
-    <ul>
-      <li>Tap <strong>profile avatar</strong> (top-right) → Profile → Settings for dev toggles</li>
-      <li>Tap the <strong>postcard</strong> to go to Family</li>
-      <li>Tap any family avatar → member profile</li>
-      <li>Tap category in Things tile → Things tab</li>
-      <li>Tap <strong>+</strong> center button → universal add sheet</li>
-      <li>Scroll Home to see closing KKOSH banner</li>
-    </ul>
-
-    <h4>DEV TOGGLES</h4>
-    <ul>
-      <li>Density: Zero / Low / Partial / Heavy</li>
-      <li>Time of day (greeting)</li>
-      <li>Alert intensity (calm / normal / crisis)</li>
-      <li>Replay onboarding</li>
-      <li>Reset to default</li>
-    </ul>
-
-    <h4>STATE PERSISTS</h4>
-    <ul>
-      <li>All toggles saved to localStorage</li>
-      <li>Survives refresh during demos</li>
-    </ul>
-
-    <div class="divider"></div>
-
-    <h4>LOCKED DECISIONS</h4>
-    <ul>
-      <li>Palette: Ink-primary (Option D)</li>
-      <li>Hero: F3 postcard + stacked tiles</li>
-      <li>Things tile: 2×2 grid full-width</li>
-      <li>Tab bar: Home · Things · + · People · Money</li>
-      <li>Network: asset-card only (not in Family)</li>
-      <li>Primary CTAs: ink black (no green)</li>
-    </ul>
+    <div class="size-btn active" onclick="setDeviceSize(390, 844, this)" id="size-pro">
+      <div class="size-label">PRO</div>
+      <div class="size-name">iPhone 15</div>
+      <div class="size-dim">390 × 844</div>
+    </div>
+    <div class="size-btn" onclick="setDeviceSize(375, 812, this)" id="size-se">
+      <div class="size-label">COMPACT</div>
+      <div class="size-name">iPhone SE</div>
+      <div class="size-dim">375 × 812</div>
+    </div>
+    <div class="size-btn" onclick="setDeviceSize(430, 932, this)" id="size-max">
+      <div class="size-label">MAX</div>
+      <div class="size-name">iPhone 16+</div>
+      <div class="size-dim">430 × 932</div>
+    </div>
   </div>
 
   <div class="device-frame" id="device">
@@ -523,6 +502,15 @@ input { font-family: inherit; }
     </div>
 
     <!-- Tab bar (persistent) -->
+    <!-- Floating help button -->
+
+    <!-- Help sheet -->
+    <div class="sheet-backdrop" id="help-backdrop" onclick="closeFormSheet('help')"></div>
+    <div class="sheet tall" id="help-sheet">
+      <div class="sheet-handle"></div>
+      <div id="help-body"></div>
+    </div>
+
     <div class="tab-bar" id="tab-bar">
       <button class="tab-item active" id="tab-home" onclick="goTo('home')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b6660" stroke-width="1.6"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/></svg>
@@ -652,11 +640,14 @@ input { font-family: inherit; }
     <div class="screen" id="screen-home">
       <div class="status-bar"></div>
       <div class="header">
-        <button class="icon-btn" onclick="goTo('search')">
+        <button class="profile-avatar" onclick="goTo('profile')" style="width:34px;height:34px;font-size:13px;">K</button>
+        <div class="header-title" id="home-greeting" style="flex:1;text-align:center;font-size:15px;">Good morning, <strong>Khushwant</strong></div>
+        <button class="icon-btn" onclick="goTo('search')" style="margin-right:4px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
         </button>
-        <div class="header-title" id="home-greeting">Good morning, <strong>Khushwant</strong></div>
-        <button class="profile-avatar" onclick="goTo('profile')">K</button>
+        <button class="icon-btn" onclick="goTo('notifications')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </button>
       </div>
       <div class="screen-scroll" id="home-scroll"></div>
     </div>
@@ -696,6 +687,7 @@ input { font-family: inherit; }
     <div class="screen" id="screen-wizard-education"></div>
     <div class="screen" id="screen-transactions"></div>
     <div class="screen" id="screen-search"></div>
+    <div class="screen" id="screen-notifications"></div>
 
     <!-- Add Vehicle Sheet -->
     <div class="sheet-backdrop" id="addVehicle-backdrop" onclick="closeFormSheet('addVehicle')"></div>
@@ -1214,7 +1206,8 @@ function renderThings() {
         ? `<span style="font-size:10px;color:#8a5d09;font-weight:500;white-space:nowrap;">${t.alert}</span>`
         : `<span style="font-size:10px;color:#9a958f;white-space:nowrap;">All clear</span>`;
       let badgeHtml = '';
-      if (t.category === 'property' && t.mode === 'home') badgeHtml = `<span class="state-pill" style="background: rgba(0,0,0,0.06); color: #1a1a1a;">Home</span>`;
+      if (t.shared) badgeHtml = `<span class="state-pill" style="background: rgba(0,0,0,0.06); color: #6b6660; font-size: 8px;">🔗 Shared</span>`;
+      else if (t.category === 'property' && t.mode === 'home') badgeHtml = `<span class="state-pill" style="background: rgba(0,0,0,0.06); color: #1a1a1a;">Home</span>`;
       else if (t.category === 'property' && t.mode === 'rented-out') badgeHtml = `<span class="state-pill" style="background: rgba(200,135,13,0.12); color: #8a5d09;">Rented out</span>`;
       else if (t.category === 'property' && t.mode === 'you-rent') badgeHtml = `<span class="state-pill" style="background: rgba(45,138,78,0.12); color: #1f6638;">You rent</span>`;
       const sub = getDisplaySub(t);
@@ -1576,6 +1569,7 @@ function renderProfile() {
           <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Connected services</div><div class="row-sub">DigiLocker · Parivahan · BBPS</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
           <div class="card-row" onclick="goTo('search')"><div class="row-icon-tile">${iconSvg('doc', 16)}</div><div class="row-main"><div class="row-title">Archived assets</div><div class="row-sub">1 archived</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
           <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile">${iconSvg('shield', 16)}</div><div class="row-main"><div class="row-title">Privacy & security</div><div class="row-sub">Your data stays in India</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
+          <div class="card-row" onclick="openHelpSheet()"><div class="row-icon-tile" style="background:rgba(45,138,78,0.08);">${iconSvg('chat', 16, '#1f6638')}</div><div class="row-main"><div class="row-title">Help & support</div><div class="row-sub">FAQs · WhatsApp · Report bug</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
           <div class="card-row" onclick="goTo('settings')"><div class="row-icon-tile" style="background:#1a1a1a;">${iconSvg('gear', 16, 'white')}</div><div class="row-main"><div class="row-title">Settings & dev toggles</div><div class="row-sub">Simulator controls</div></div>${iconSvg('chevron', 14, '#9a958f')}</div>
         </div>
       </div>
@@ -1770,6 +1764,17 @@ const defaultState = {
 };
 let state = loadState();
 
+function setDeviceSize(w, h, btn) {
+  const device = document.getElementById('device');
+  if (device) {
+    device.style.width = w + 'px';
+    device.style.height = 'min(' + h + 'px, calc(100vh - 40px))';
+    device.style.maxHeight = h + 'px';
+  }
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
 function loadState() {
   try {
     const saved = localStorage.getItem(STATE_KEY);
@@ -1824,7 +1829,12 @@ const allThings = [
   { id: 'gold-necklace',  name: 'Gold Necklace Set', sub: '2018 · Family heirloom', category: 'other', assignees: ['khushwant'], badge: 'Insured', icon: 'other', location: 'Woodstock · Locker' },
   { id: 'yamaha-guitar',  name: 'Yamaha F310 Guitar', sub: "2021 · Arjun's", category: 'other', assignees: ['khushwant'], icon: 'other' },
   { id: 'titan-watch',    name: 'Titan Raga Watch', sub: '2019 · Gift', category: 'other', assignees: ['khushwant'], icon: 'other' },
-  { id: 'firefox',        name: 'Firefox Roadrunner', sub: "2023 · Arjun's", category: 'other', assignees: ['khushwant'], alert: 'Service due', alertType: 'attention', icon: 'other' }
+  { id: 'firefox',        name: 'Firefox Roadrunner', sub: "2023 · Arjun's", category: 'other', assignees: ['khushwant'], alert: 'Service due', alertType: 'attention', icon: 'other' },
+  // Shared appliances (tenant's view of landlord's assets)
+  { id: 'shared-ac',     name: 'Voltas Split AC', sub: 'Shared · Mrs. Mehra\'s', category: 'appliances', assignees: ['khushwant'], icon: 'appliance', location: 'Koramangala · Living Room', shared: true, sharedOwner: 'Mrs. Mehra' },
+  { id: 'shared-tv',     name: 'Samsung 55" QLED', sub: 'Shared · Mrs. Mehra\'s', category: 'electronics', assignees: ['khushwant'], icon: 'tv', location: 'Koramangala · Living Room', shared: true, sharedOwner: 'Mrs. Mehra' },
+  { id: 'shared-fridge', name: 'Samsung Fridge', sub: 'Shared · Mrs. Mehra\'s', category: 'appliances', assignees: ['khushwant'], icon: 'appliance', location: 'Koramangala · Kitchen', shared: true, sharedOwner: 'Mrs. Mehra' },
+  { id: 'shared-wm',     name: 'Whirlpool WM', sub: 'Shared · Mrs. Mehra\'s', category: 'appliances', assignees: ['khushwant'], icon: 'appliance', location: 'Koramangala · Utility', shared: true, sharedOwner: 'Mrs. Mehra' }
 ];
 
 // Density — which items render at each density level
@@ -1908,13 +1918,14 @@ function goTo(screen, params) {
   // Hide tab bar for full-screen experiences (AI, onboarding)
   const tabBar = document.getElementById('tab-bar');
   if (tabBar) {
-    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen === 'profile' || screen === 'settings' || screen === 'transactions' || screen === 'member' || screen === 'asset' || screen === 'search' || screen.startsWith('ob-') || screen.startsWith('ocr-') || screen.startsWith('wizard-');
+    const hide = screen === 'ai-ask' || screen === 'onboarding-intro' || screen === 'profile' || screen === 'settings' || screen === 'transactions' || screen === 'member' || screen === 'asset' || screen === 'search' || screen === 'notifications' || screen.startsWith('ob-') || screen.startsWith('ocr-') || screen.startsWith('wizard-');
     tabBar.style.display = hide ? 'none' : 'flex';
   }
   if (params && params.memberId) renderMemberProfile(params.memberId);
   if (params && params.assetId) renderAssetCard(params.assetId);
   if (screen === 'transactions' && typeof renderTransactions === 'function') renderTransactions();
   if (screen === 'search' && typeof renderSearch === 'function') renderSearch();
+  if (screen === 'notifications' && typeof renderNotifications === 'function') renderNotifications();
 }
 
 function updateTabBar(screen) {
@@ -2020,7 +2031,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loading && state.currentScreen !== 'loading') loading.classList.remove('active');
     // Fall back to home if saved screen is transient (wizard/ocr/onboarding)
     let initScreen = state.currentScreen || 'home';
-    if (initScreen.startsWith('wizard-') || initScreen.startsWith('ocr-') || initScreen.startsWith('ob-') || initScreen === 'onboarding-intro' || initScreen === 'member' || initScreen === 'asset' || initScreen === 'transactions' || initScreen === 'profile' || initScreen === 'settings' || initScreen === 'search') {
+    if (initScreen.startsWith('wizard-') || initScreen.startsWith('ocr-') || initScreen.startsWith('ob-') || initScreen === 'onboarding-intro' || initScreen === 'member' || initScreen === 'asset' || initScreen === 'transactions' || initScreen === 'profile' || initScreen === 'settings' || initScreen === 'search' || initScreen === 'notifications') {
       initScreen = 'home';
     }
     if (typeof goTo === 'function') goTo(initScreen);
@@ -2189,20 +2200,26 @@ function renderAssetCard(assetId) {
     const urgentCountColor = urgentCount > 0 ? '#8a5d09' : '#9a958f';
 
     const renderRow = (p) => {
+      const isParivahan = p.source === 'parivahan';
       const stateRight = p.inlinePay
         ? `<button onclick="event.stopPropagation(); openPayForProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}', '${p.detail.replace(/'/g, "\\'")}', ${parseInt(String(p.inlinePay).replace(/[^\d]/g, '')) || 0})" style="padding: 7px 16px; border-radius: 18px; background: #1a1a1a; color: white; font-size: 11px; font-weight: 500;">PAY</button>`
         : `<span class="state-pill ${p.state}">${p.state === 'expired' ? 'EXPIRED' : p.state === 'due' ? (p.stateLabel || 'DUE') : p.state === 'active' ? 'ACTIVE' : p.state === 'draft' ? (p.stateLabel || 'EXPLORE') : ''}</span>`;
       const innerCtaRight = p.innerCta
-        ? `<button onclick="event.stopPropagation(); openEditProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}')" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
+        ? `<button onclick="event.stopPropagation(); ${isParivahan ? "showToast('Syncing with Parivahan...')" : "openEditProtection('" + assetId + "', '" + p.label.replace(/'/g, "\\'") + "')"}" style="font-size: 10px; color: #6b6660; margin-top: 4px; padding: 0;">${p.innerCta}</button>`
         : '';
+      const sourceBadge = isParivahan ? `<span style="font-size: 7px; color: #9a958f; letter-spacing: 0.3px; margin-left: 4px;">PARIVAHAN</span>` : '';
       const rowKey = `prot_${p.label.replace(/[^a-z0-9]/gi, '_')}`;
       const isRowExpanded = !!expand[rowKey];
       const hasHistory = p.history && p.history.length > 0;
-      const onClick = hasHistory ? `toggleAssetSection('${assetId}', '${rowKey}')` : `openEditProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}')`;
+      const onClick = hasHistory
+        ? `toggleAssetSection('${assetId}', '${rowKey}')`
+        : isParivahan
+        ? `showToast('Synced from Parivahan · Last updated 2h ago')`
+        : `openEditProtection('${assetId}', '${p.label.replace(/'/g, "\\'")}')`;
       const historyAffordance = hasHistory ? `<div style="position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #c2bdb5;">${isRowExpanded ? '⌃' : '⌄'}</div>` : '';
       const amountInline = p.inlinePay
         ? `<div style="font-size: 11px; color: #8a5d09; margin-top: 3px;">${p.detail} · <span style="color: #1a1a1a; font-weight: 500;">${p.inlinePay}</span></div>`
-        : `<div style="font-size: 11px; color: ${p.state === 'expired' ? '#8a2818' : p.state === 'due' ? '#8a5d09' : '#6b6660'}; margin-top: 3px;">${p.detail}</div>`;
+        : `<div style="font-size: 11px; color: ${p.state === 'expired' ? '#8a2818' : p.state === 'due' ? '#8a5d09' : '#6b6660'}; margin-top: 3px;">${p.detail}${sourceBadge}</div>`;
 
       if (p.state === 'expired' || p.state === 'due') {
         return `<div class="attention-row" style="position: relative;" onclick="${onClick}"><div class="urgency-bar ${p.state === 'expired' ? 'critical' : ''}"></div><div class="row-body" style="gap: 12px; align-items: flex-start;"><div class="row-main"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><div style="font-size: 13px; font-weight: 500;">${p.label}</div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">${stateRight}${innerCtaRight}</div></div>${amountInline}${isRowExpanded && hasHistory ? renderHistoryBlock(p.history) : ''}</div></div>${historyAffordance}</div>`;
@@ -2339,45 +2356,70 @@ function renderAssetCard(assetId) {
   })() : '';
 
   // RENT PAYMENTS (Koramangala) — unchanged structure, cleaner
-  const rentPaymentsHtml = config.rentPayments ? `
-    ${sectionHeader('RENT PAYMENTS', { count: `· ${config.rentPayments.paid}/${config.rentPayments.total} PAID`, action: "goTo('transactions')", actionLabel: 'View history →' })}
+  const rentPaymentsHtml = config.rentPayments ? (() => {
+    const rp = config.rentPayments;
+    const assetId = t.id;
+    return `
+    ${sectionHeader('RENT', { count: `· ${rp.paid}/${rp.total} on time`, action: "openTenantRentHistory('" + assetId + "')", actionLabel: 'History →' })}
     <div class="section-card">
       <div style="padding: 16px 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <div>
             <div style="font-size: 10px; color: #9a958f;">Monthly rent</div>
-            <div style="font-size: 22px; font-weight: 500; margin-top: 2px;">₹${config.rentPayments.amount.toLocaleString('en-IN')}</div>
-            <div style="font-size: 10px; color: #1f6638; margin-top: 4px;">✓ Last paid ${config.rentPayments.lastPaid}</div>
+            <div style="font-size: 22px; font-weight: 500; margin-top: 2px;">₹${rp.amount.toLocaleString('en-IN')}</div>
+            <div style="font-size: 10px; color: #1f6638; margin-top: 4px;">✓ Last paid ${rp.lastPaid}</div>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 10px; color: #9a958f;">Pay by</div>
-            <div style="font-size: 14px; font-weight: 500; margin-top: 2px;">${config.rentPayments.nextDate}</div>
+            <div style="font-size: 10px; color: #8a5d09;">Next due</div>
+            <div style="font-size: 14px; font-weight: 500; margin-top: 2px; color: #8a5d09;">${rp.nextDate}</div>
+            <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">to ${rp.landlord}</div>
           </div>
         </div>
-        <button class="primary-cta" style="margin-top: 14px;" onclick="openPaySheet({ assetId: 'suncity', label: 'Rent', detail: 'Suncity Apartment', amount: 22000 })">PAY</button>
-        <div style="margin-top: 10px; padding: 8px 12px; background: #F7F1E8; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
-          <div style="flex: 1; font-size: 11px; color: #6b6660;">Invite ${config.rentPayments.landlord} to track payments in-app</div>
-          <span style="font-size: 10px; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px;">Invite →</span>
+        <button class="primary-cta" style="margin-top: 14px;" onclick="openUpiPayFlow({ label: 'Rent to ${rp.landlord}', detail: '${t.name} · Monthly rent', amount: ${rp.amount}, upiId: '' })">PAY RENT · ₹${rp.amount.toLocaleString('en-IN')}</button>
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 0.5px solid rgba(0,0,0,0.06);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div style="font-size: 11px; color: #6b6660;">Agreement ends</div>
+            <div style="font-size: 12px; font-weight: 500;">Feb 28, 2027 · <span style="color: #9a958f; font-weight: 400;">11 mo left</span></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px;">
+            <div style="font-size: 11px; color: #6b6660;">Lock-in</div>
+            <div style="font-size: 12px;"><span class="state-pill active" style="font-size: 8px; padding: 2px 6px;">ENDED</span> <span style="font-size: 10px; color: #9a958f;">Mar 2025</span></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px;">
+            <div style="font-size: 11px; color: #6b6660;">Deposit paid</div>
+            <div style="font-size: 12px;">₹76,000</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; padding: 10px 12px; background: rgba(45,138,78,0.06); border-radius: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="showToast('Notifying ${rp.landlord} via WhatsApp...')">
+          <div style="font-size: 12px;">📩</div>
+          <div style="flex: 1; font-size: 11px; color: #1f6638;">Notify ${rp.landlord} about a maintenance issue</div>
+        </div>
+
+        <div style="margin-top: 8px; padding: 10px 12px; background: rgba(0,0,0,0.03); border-radius: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="openInviteLandlord('${assetId}')">
+          <div style="font-size: 12px;">🏠</div>
+          <div style="flex: 1; font-size: 11px; color: #6b6660;">Invite ${rp.landlord} to KKOSH · <span style="color:#1a1a1a;font-weight:500;">rent syncs, appliances shared</span></div>
         </div>
       </div>
     </div>
-  ` : '';
+  `})() : '';
 
   // RENTAL INCOME (Suncity)
   const rentalIncomeHtml = config.rentalIncome ? `
-    ${sectionHeader('RENTAL INCOME', { sync: { source: 'Bank', time: '1h ago' } })}
+    ${sectionHeader('RENTAL INCOME', { action: "openManageTenantSheet('" + t.id + "')", actionLabel: 'Manage →' })}
     <div class="section-card">
       <div style="padding: 14px;">
-        <div style="font-size: 10px; color: #9a958f;">Tenant</div>
+        <div style="font-size: 10px; color: #9a958f;">Current tenant</div>
         <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
           <div style="font-size: 14px; font-weight: 500;">${config.rentalIncome.tenant}</div>
           <span style="font-size: 10px; color: #6b6660;">+91 98XXX XX600</span>
           <button class="icon-btn" onclick="showToast('Call tenant')">${iconSvg('phone_call', 14)}</button>
         </div>
-        <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline;">
+        <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline; cursor: pointer;" onclick="openRentalHistory('${t.id}')">
           <div style="font-size: 11px; color: #6b6660;">Monthly rent</div>
           <div style="text-align: right;">
-            <div style="font-size: 16px; font-weight: 500;">₹${config.rentalIncome.amount.toLocaleString('en-IN')}</div>
+            <div style="font-size: 16px; font-weight: 500;">₹${config.rentalIncome.amount.toLocaleString('en-IN')} <span style="font-size: 10px; color: #9a958f;">⌄</span></div>
             <div style="font-size: 10px; color: #1f6638;">✓ Received ${config.rentalIncome.lastReceived}</div>
           </div>
         </div>
@@ -2389,9 +2431,9 @@ function renderAssetCard(assetId) {
           <div style="font-size: 11px; color: #6b6660;">Deposit held</div>
           <div style="font-size: 12px;">₹1,26,000 · 3 months</div>
         </div>
-        <div style="margin-top: 12px; display: flex; gap: 12px;">
-          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="goTo('transactions')">View tenant details →</span>
-          <span style="font-size: 11px; color: #1a1a1a; font-weight: 500; text-decoration: underline; text-decoration-color: #A8432E; text-underline-offset: 3px; cursor: pointer;" onclick="goTo('transactions')">View rental history →</span>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 0.5px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: baseline;">
+          <div style="font-size: 11px; color: #6b6660;">Police verification</div>
+          <div style="font-size: 12px;"><span class="state-pill active" style="font-size: 8px; padding: 2px 6px;">DONE</span></div>
         </div>
       </div>
     </div>
@@ -2601,15 +2643,60 @@ function renderAssetCard(assetId) {
     <div style="padding: 14px 20px 10px; display: flex; align-items: center; justify-content: space-between;">
       <button class="back-btn" onclick="goTo('things')">${iconSvg('back', 18, '#1a1a1a')}</button>
       <div style="display: flex; gap: 6px;">
-        <button class="back-btn" onclick="openAssetEditSheet('${t.id}')">${iconSvg('edit', 16, '#1a1a1a')}</button>
         <button class="back-btn" onclick="openAssetMoreSheet('${t.id}')">${iconSvg('more', 16, '#1a1a1a')}</button>
       </div>
     </div>
     <div class="screen-scroll">
       ${heroHtml}
       ${topReminder}
+      ${t.category !== 'property' ? (() => {
+        if (t.location) {
+          const locParts = t.location.split('·').map(s => s.trim());
+          const propertyName = locParts[0] || '';
+          const room = locParts[1] || '';
+          const linkedProperty = getActiveThings().find(p => p.category === 'property' && p.name.toLowerCase().includes(propertyName.toLowerCase().split(' ')[0]));
+          const propertyClick = linkedProperty ? "goTo('asset', { assetId: '" + linkedProperty.id + "' })" : '';
+          const isShared = t.shared || false;
+          return `
+          <div style="margin: 8px 16px 4px; padding: 12px 14px; background: white; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 32px; height: 32px; border-radius: 10px; background: #F7F1E8; display: flex; align-items: center; justify-content: center;">
+              ${iconSvg('home', 14, '#1a1a1a')}
+            </div>
+            <div style="flex: 1; cursor: ${linkedProperty ? 'pointer' : 'default'};" ${linkedProperty ? 'onclick="' + propertyClick + '"' : ''}>
+              <div style="font-size: 12px; font-weight: 500;">${propertyName}${room ? ' · ' + room : ''}</div>
+              <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">${isShared ? 'Shared by ' + (t.sharedOwner || 'owner') : 'Located at'}${linkedProperty ? ' · tap to view property →' : ''}</div>
+            </div>
+            ${!isShared ? '<button onclick="event.stopPropagation(); openEditConnected(\'' + t.id + '\', \'' + t.id + '\', \'' + room + '\')" style="font-size: 9px; color: #6b6660; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,0.04);">Move</button>' : ''}
+          </div>`;
+        } else {
+          // Zero state — no location set
+          return `
+          <div style="margin: 8px 16px 4px; padding: 12px 14px; background: white; border-radius: 12px; border: 1px dashed rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="openEditConnected('${t.id}', '${t.id}', '')">
+            <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center;">
+              ${iconSvg('home', 14, '#9a958f')}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 12px; font-weight: 500; color: #9a958f;">Where does this live?</div>
+              <div style="font-size: 10px; color: #c2bdb5; margin-top: 1px;">Link to a property for full household tracking</div>
+            </div>
+            <span style="font-size: 10px; color: #A8432E; font-weight: 500;">+ Add</span>
+          </div>`;
+        }
+      })() : ''}
       ${rentPaymentsHtml}
       ${rentalIncomeHtml}
+      ${config.landlordShared ? `
+      <div style="margin: 0 16px 12px; padding: 14px; background: rgba(45,138,78,0.06); border-radius: 14px; cursor: pointer;" onclick="openLandlordSharedTray('${t.id}')">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="font-size: 18px; margin-top: 2px;">🎁</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: #1f6638;">${config.landlordShared.landlord} shared utilities & docs</div>
+            <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${config.landlordShared.utilities.length} utilities · ${config.landlordShared.docs.filter(d => d.shared).length} docs · ${config.landlordShared.appliances ? config.landlordShared.appliances.length : 0} appliances ready</div>
+            <div style="font-size: 11px; font-weight: 500; color: #1f6638; margin-top: 6px;">Tap to review & accept →</div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
       ${utilitiesHtml}
       ${protectionHtml}
       ${componentsHtml}
@@ -3493,6 +3580,658 @@ function openAddSupportForm(assetId) {
     '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ Support contact added\')">Save contact</button>';
 }
 
+/* ============ INVITE LANDLORD TO KKOSH ============ */
+function openInviteLandlord(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var rp = config.rentPayments;
+  if (!rp) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  body.innerHTML =
+    '<div style="text-align:center;padding:8px 0 16px;">' +
+      '<div style="font-size:28px;margin-bottom:8px;">🏠</div>' +
+      '<div style="font-size:18px;font-weight:500;">Invite ' + rp.landlord + ' to KKOSH</div>' +
+      '<div style="font-size:12px;color:#6b6660;margin-top:6px;">When your landlord joins, both of you benefit.</div>' +
+    '</div>' +
+
+    '<div style="padding:16px;background:white;border-radius:14px;margin-bottom:14px;">' +
+      '<div style="font-size:11px;font-weight:500;letter-spacing:0.4px;color:#9a958f;margin-bottom:10px;">WHAT CHANGES FOR YOU</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">💰</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Rent payments auto-confirmed</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">When you pay, landlord gets notified. No "did you receive?" calls.</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">🔧</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Maintenance requests tracked</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Log an issue, landlord sees it instantly. No lost WhatsApp messages.</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<div style="font-size:14px;">📺</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Appliances shared to your card</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">AC, TV, fridge details + warranty + service history — all visible to you.</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="padding:16px;background:white;border-radius:14px;margin-bottom:14px;">' +
+      '<div style="font-size:11px;font-weight:500;letter-spacing:0.4px;color:#9a958f;margin-bottom:10px;">WHAT ' + rp.landlord.toUpperCase() + ' GETS</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">🏢</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Their property on KKOSH</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Auto-created as "Rented out" with you as verified tenant.</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<div style="font-size:14px;">📊</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Rent collection dashboard</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Payment history, agreement tracking, deposit management.</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<button onclick="showToast(\'WhatsApp invite sent to ' + rp.landlord + '\'); closeFormSheet(\'form\')" style="width:100%;padding:14px;background:#25D366;border-radius:12px;color:white;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">' +
+      '<span style="font-size:16px;">💬</span> Send via WhatsApp' +
+    '</button>' +
+    '<button onclick="showToast(\'SMS invite sent\'); closeFormSheet(\'form\')" style="width:100%;padding:14px;background:rgba(0,0,0,0.04);border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<span style="font-size:16px;">📱</span> Send via SMS' +
+    '</button>' +
+
+    '<div style="font-size:9px;color:#9a958f;text-align:center;margin-top:12px;line-height:1.5;">' + rp.landlord + ' will receive a link to download KKOSH.<br>Their "Rented out" property card will be auto-created with your details.</div>';
+}
+
+/* ============ LANDLORD SHARED TRAY ============ */
+function openLandlordSharedTray(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ls = config.landlordShared;
+  if (!ls) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var utilRows = ls.utilities.map(function(u) {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:44px;height:26px;border-radius:13px;background:#1a1a1a;position:relative;flex-shrink:0;">' +
+        '<div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;right:3px;box-shadow:0 1px 3px rgba(0,0,0,0.15);"></div>' +
+      '</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:500;">' + u.label + '</div>' +
+        '<div style="font-size:10px;color:#6b6660;margin-top:2px;">' + u.provider + ' · ' + u.consumerNo + '</div>' +
+      '</div>' +
+      '<span class="state-pill active" style="font-size:8px;padding:2px 6px;">READY</span>' +
+    '</div>';
+  }).join('');
+
+  var docRows = ls.docs.map(function(d) {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:22px;height:22px;border-radius:50%;background:rgba(45,138,78,0.1);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">✓</div>' +
+      '<div style="flex:1;font-size:13px;">' + d.label + '</div>' +
+      '<span style="font-size:10px;color:#1f6638;">Shared</span>' +
+    '</div>';
+  }).join('');
+
+  var applianceRows = (ls.appliances || []).map(function(a) {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:44px;height:26px;border-radius:13px;background:#1a1a1a;position:relative;flex-shrink:0;">' +
+        '<div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;right:3px;box-shadow:0 1px 3px rgba(0,0,0,0.15);"></div>' +
+      '</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:500;">' + a.label + '</div>' +
+        '<div style="font-size:10px;color:#6b6660;margin-top:2px;">' + a.location + ' · ' + a.warranty + '</div>' +
+      '</div>' +
+      '<span style="font-size:8px;padding:2px 6px;background:rgba(0,0,0,0.06);border-radius:8px;color:#6b6660;">SHARED</span>' +
+    '</div>';
+  }).join('');
+
+  var applianceSection = (ls.appliances && ls.appliances.length > 0) ?
+    '<div style="background:white;border-radius:14px;padding:4px 14px;margin-bottom:14px;">' +
+      '<div style="padding:10px 0 4px;font-size:10px;letter-spacing:0.5px;color:#6b6660;font-weight:500;">APPLIANCES IN THIS PROPERTY · SHARED ACCESS</div>' +
+      applianceRows +
+      '<div style="padding:8px 0;font-size:9px;color:#9a958f;line-height:1.4;">Owned by ' + ls.landlord + '. You can log service, set reminders, and contact support — but can\'t edit ownership or protection.</div>' +
+    '</div>' : '';
+
+  var totalItems = ls.utilities.length + ls.docs.filter(function(d){return d.shared}).length + (ls.appliances || []).length;
+
+  body.innerHTML =
+    '<div style="text-align:center;padding:8px 0 16px;">' +
+      '<div style="font-size:28px;margin-bottom:8px;">🎁</div>' +
+      '<div style="font-size:18px;font-weight:500;">' + ls.landlord + ' set things up for you</div>' +
+      '<div style="font-size:12px;color:#6b6660;margin-top:6px;">Review what\'s shared and accept to auto-configure your card.</div>' +
+    '</div>' +
+
+    '<div style="background:white;border-radius:14px;padding:4px 14px;margin-bottom:14px;">' +
+      '<div style="padding:10px 0 4px;font-size:10px;letter-spacing:0.5px;color:#6b6660;font-weight:500;">UTILITIES · PRE-CONFIGURED</div>' +
+      utilRows +
+    '</div>' +
+
+    '<div style="background:white;border-radius:14px;padding:4px 14px;margin-bottom:14px;">' +
+      '<div style="padding:10px 0 4px;font-size:10px;letter-spacing:0.5px;color:#6b6660;font-weight:500;">DOCUMENTS · SHARED</div>' +
+      docRows +
+    '</div>' +
+
+    applianceSection +
+
+    '<div style="padding:10px 12px;background:rgba(0,0,0,0.03);border-radius:10px;margin-bottom:16px;">' +
+      '<div style="font-size:10px;color:#6b6660;line-height:1.5;">You can add more utilities (maid, cook) or remove ones you don\'t need after accepting.</div>' +
+    '</div>' +
+
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + totalItems + ' items configured from ' + ls.landlord + '\')">Accept all</button>' +
+    '<button onclick="closeFormSheet(\'form\')" style="width:100%;padding:12px;margin-top:8px;font-size:12px;color:#6b6660;text-align:center;">I\'ll set up myself</button>';
+}
+
+/* ============ TENANT RENT HISTORY ============ */
+function openTenantRentHistory(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var rp = config.rentPayments;
+  if (!rp) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var months = [
+    { month: 'Apr 2026', amount: 38000, status: 'paid', date: '5 Apr', method: 'UPI · GPay' },
+    { month: 'Mar 2026', amount: 38000, status: 'paid', date: '3 Mar', method: 'UPI · GPay' },
+    { month: 'Feb 2026', amount: 38000, status: 'paid', date: '1 Feb', method: 'UPI · PhonePe' },
+    { month: 'Jan 2026', amount: 38000, status: 'paid', date: '2 Jan', method: 'UPI · GPay' },
+    { month: 'Dec 2025', amount: 38000, status: 'paid', date: '1 Dec', method: 'UPI · GPay' },
+    { month: 'Nov 2025', amount: 38000, status: 'paid', date: '1 Nov', method: 'Bank transfer' },
+    { month: 'Oct 2025', amount: 38000, status: 'paid', date: '1 Oct', method: 'UPI · GPay' },
+    { month: 'Sep 2025', amount: 38000, status: 'paid', date: '1 Sep', method: 'UPI · GPay' },
+    { month: 'Aug 2025', amount: 38000, status: 'paid', date: '2 Aug', method: 'UPI · GPay' },
+    { month: 'Jul 2025', amount: 35000, status: 'paid', date: '1 Jul', method: 'UPI · GPay', note: 'Old rent' },
+    { month: 'Jun 2025', amount: 35000, status: 'paid', date: '1 Jun', method: 'Bank transfer' },
+    { month: 'May 2025', amount: 35000, status: 'paid', date: '1 May', method: 'UPI · GPay' }
+  ];
+
+  var totalPaid = months.reduce(function(s, m) { return s + m.amount; }, 0);
+
+  var rowsHtml = months.map(function(m) {
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:22px;height:22px;border-radius:50%;background:rgba(45,138,78,0.1);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px;">✓</div>' +
+      '<div style="flex:1;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+          '<div style="font-size:13px;font-weight:500;">' + m.month + '</div>' +
+          '<div style="font-size:13px;font-weight:500;">₹' + m.amount.toLocaleString('en-IN') + '</div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#6b6660;margin-top:2px;">' + m.date + ' · ' + m.method + (m.note ? ' · <span style="color:#9a958f;">' + m.note + '</span>' : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<div style="font-size:16px;font-weight:500;">Rent history</div>' +
+      '<button class="sheet-close" onclick="closeFormSheet(\'form\')">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:16px;">Paid to ' + rp.landlord + ' · ' + (t ? t.name : '') + '</div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:18px;">' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;">₹' + (totalPaid/100000).toFixed(1) + 'L</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">Total paid</div>' +
+      '</div>' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;">' + months.length + '</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">Months</div>' +
+      '</div>' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;color:#1f6638;">' + months.length + '/' + months.length + '</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">On time</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:white;border-radius:14px;padding:4px 14px;">' + rowsHtml + '</div>';
+}
+
+/* ============ INVITE TENANT TO KKOSH ============ */
+function openInviteTenant(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ri = config.rentalIncome;
+  if (!ri) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Invite tenant</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + ri.tenant + ' · ' + (t ? t.name : '') + '</div>' +
+
+    '<div style="padding:16px;background:white;border-radius:14px;margin-bottom:16px;">' +
+      '<div style="font-size:11px;font-weight:500;letter-spacing:0.4px;color:#9a958f;margin-bottom:10px;">WHAT THEY GET</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">🏠</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Their own "I rent" card</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Pre-filled with property name, rent amount, agreement dates, your contact as landlord</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">⚡</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Utility tracking</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Electricity, water, gas bills in one place</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<div style="font-size:14px;">🔔</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Rent reminders</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Both of you get notified. Payment confirmation is mutual.</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="padding:16px;background:white;border-radius:14px;margin-bottom:16px;">' +
+      '<div style="font-size:11px;font-weight:500;letter-spacing:0.4px;color:#9a958f;margin-bottom:10px;">WHAT YOU GET</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<div style="font-size:14px;">✓</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Verified tenant on KKOSH</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">Their profile linked to your property</div></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<div style="font-size:14px;">💰</div>' +
+        '<div><div style="font-size:12px;font-weight:500;">Rent payments auto-logged</div><div style="font-size:10px;color:#6b6660;margin-top:2px;">When they pay, your rental history updates automatically</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="field-label">Send invite via</div>' +
+    '<button onclick="showToast(\'WhatsApp invite sent to ' + ri.tenant + '\'); closeFormSheet(\'form\')" style="width:100%;padding:14px;background:#25D366;border-radius:12px;color:white;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">' +
+      '<span style="font-size:16px;">💬</span> Send via WhatsApp' +
+    '</button>' +
+    '<button onclick="showToast(\'SMS invite sent\'); closeFormSheet(\'form\')" style="width:100%;padding:14px;background:rgba(0,0,0,0.04);border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<span style="font-size:16px;">📱</span> Send via SMS' +
+    '</button>' +
+
+    '<div style="font-size:9px;color:#9a958f;text-align:center;margin-top:12px;line-height:1.5;">Tenant will receive a link to download KKOSH.<br>Their rental card will be created once they sign up.</div>';
+}
+
+/* ============ MANAGE TENANT HUB ============ */
+function openManageTenantSheet(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ri = config.rentalIncome;
+  if (!ri) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+  formState = { type: 'manageTenant', assetId: assetId, changeoverStep: 1 };
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Manage tenant</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + ri.tenant + ' · ' + (t ? t.name : '') + '</div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\'); openTenantSheet(\'' + assetId + '\')">' +
+      '<div class="row-icon-tile">' + iconSvg('edit', 16) + '</div>' +
+      '<div class="row-main"><div class="row-title">Edit tenant details</div><div class="row-sub">Name, phone, rent, agreement, deposit</div></div>' +
+    '</div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\'); openRentalHistory(\'' + assetId + '\')">' +
+      '<div class="row-icon-tile">' + iconSvg('doc', 16) + '</div>' +
+      '<div class="row-main"><div class="row-title">Rental history</div><div class="row-sub">Month-wise payments · ' + ri.tenant + '</div></div>' +
+    '</div>' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\'); openInviteTenant(\'' + assetId + '\')">' +
+      '<div class="row-icon-tile" style="background:rgba(45,138,78,0.08);">' + iconSvg('users', 16, '#1f6638') + '</div>' +
+      '<div class="row-main"><div class="row-title">Invite ' + ri.tenant + ' to KKOSH</div><div class="row-sub">They get their own rental card · rent tracking syncs</div></div>' +
+    '</div>' +
+    '<div style="border-top:0.5px solid rgba(0,0,0,0.06);margin-top:8px;padding-top:8px;">' +
+    '<div class="card-row" onclick="closeFormSheet(\'form\'); openTenantChangeover(\'' + assetId + '\')">' +
+      '<div class="row-icon-tile" style="background:rgba(168,67,46,0.08);">' + iconSvg('users', 16, '#A8432E') + '</div>' +
+      '<div class="row-main"><div class="row-title" style="color:#A8432E;">Tenant changed</div><div class="row-sub">Close out current · Add new tenant</div></div>' +
+    '</div>' +
+    '</div>';
+}
+
+/* ============ RENTAL HISTORY ============ */
+function openRentalHistory(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ri = config.rentalIncome;
+  if (!ri) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  var months = [
+    { month: 'Apr 2026', amount: 42000, status: 'received', date: '1 Apr', method: 'UPI' },
+    { month: 'Mar 2026', amount: 42000, status: 'received', date: '2 Mar', method: 'UPI' },
+    { month: 'Feb 2026', amount: 42000, status: 'received', date: '1 Feb', method: 'Bank transfer' },
+    { month: 'Jan 2026', amount: 42000, status: 'received', date: '3 Jan', method: 'UPI' },
+    { month: 'Dec 2025', amount: 42000, status: 'received', date: '1 Dec', method: 'UPI' },
+    { month: 'Nov 2025', amount: 42000, status: 'late', date: '8 Nov', method: 'UPI', note: 'Received 7 days late' },
+    { month: 'Oct 2025', amount: 42000, status: 'received', date: '1 Oct', method: 'Bank transfer' },
+    { month: 'Sep 2025', amount: 42000, status: 'received', date: '1 Sep', method: 'UPI' },
+    { month: 'Aug 2025', amount: 42000, status: 'received', date: '2 Aug', method: 'UPI' },
+    { month: 'Jul 2025', amount: 40000, status: 'received', date: '1 Jul', method: 'UPI', note: 'Old rent amount' },
+    { month: 'Jun 2025', amount: 40000, status: 'received', date: '1 Jun', method: 'UPI' },
+    { month: 'May 2025', amount: 40000, status: 'received', date: '1 May', method: 'Bank transfer' }
+  ];
+
+  var totalReceived = months.reduce(function(s, m) { return s + m.amount; }, 0);
+  var onTimeCount = months.filter(function(m) { return m.status === 'received'; }).length;
+
+  var rowsHtml = months.map(function(m) {
+    var statusColor = m.status === 'received' ? '#1f6638' : m.status === 'late' ? '#8a5d09' : '#A8432E';
+    var statusLabel = m.status === 'received' ? '✓' : m.status === 'late' ? '⚠' : '✕';
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.04);">' +
+      '<div style="width:22px;height:22px;border-radius:50%;background:' + (m.status === 'received' ? 'rgba(45,138,78,0.1)' : 'rgba(200,135,13,0.1)') + ';display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px;">' + statusLabel + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+          '<div style="font-size:13px;font-weight:500;">' + m.month + '</div>' +
+          '<div style="font-size:13px;font-weight:500;">₹' + m.amount.toLocaleString('en-IN') + '</div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#6b6660;margin-top:2px;">' + m.date + ' · ' + m.method + (m.note ? ' · <span style="color:' + statusColor + ';">' + m.note + '</span>' : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<div style="font-size:16px;font-weight:500;">Rental history</div>' +
+      '<button class="sheet-close" onclick="closeFormSheet(\'form\')">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:16px;">' + ri.tenant + ' · ' + (t ? t.name : '') + '</div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:18px;">' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;">₹' + (totalReceived/100000).toFixed(1) + 'L</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">Total received</div>' +
+      '</div>' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;">' + months.length + '</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">Months</div>' +
+      '</div>' +
+      '<div style="flex:1;padding:12px;background:white;border-radius:12px;text-align:center;">' +
+        '<div style="font-size:18px;font-weight:500;color:#1f6638;">' + onTimeCount + '/' + months.length + '</div>' +
+        '<div style="font-size:9px;color:#6b6660;margin-top:2px;">On time</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:white;border-radius:14px;padding:4px 14px;">' + rowsHtml + '</div>';
+}
+
+/* ============ TENANT MANAGEMENT ============ */
+function openTenantSheet(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ri = config.rentalIncome;
+  if (!ri) return;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  body.innerHTML =
+    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Tenant details</div>' +
+    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + (t ? t.name : '') + '</div>' +
+    '<div class="field-label">Tenant name</div>' +
+    '<input type="text" class="text-input" value="' + ri.tenant + '" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Phone</div>' +
+    '<input type="tel" class="text-input" value="+91 98765 00600" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Email (optional)</div>' +
+    '<input type="email" class="text-input" placeholder="tenant@email.com" style="margin-bottom:14px;" />' +
+    '<div class="field-label">ID proof uploaded</div>' +
+    '<div class="chip-row" style="margin-bottom:14px;">' +
+      '<button class="chip on">Aadhaar</button>' +
+      '<button class="chip">PAN</button>' +
+      '<button class="chip">Passport</button>' +
+    '</div>' +
+    '<div class="field-label">Monthly rent</div>' +
+    '<input type="text" class="text-input" value="₹' + ri.amount.toLocaleString('en-IN') + '" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Agreement period</div>' +
+    '<div class="two-col" style="margin-bottom:14px;">' +
+      '<div><div class="field-label" style="margin-top:0;">From</div><input type="date" class="text-input" value="2024-04-01" /></div>' +
+      '<div><div class="field-label" style="margin-top:0;">Until</div><input type="date" class="text-input" value="2027-03-31" /></div>' +
+    '</div>' +
+    '<div class="field-label">Agreement type</div>' +
+    '<div class="chip-row" style="margin-bottom:14px;">' +
+      '<button class="chip on">Registered</button>' +
+      '<button class="chip">Unregistered</button>' +
+    '</div>' +
+    '<div class="field-label">Security deposit held</div>' +
+    '<input type="text" class="text-input" value="₹1,26,000" style="margin-bottom:14px;" />' +
+    '<div class="field-label">Police verification</div>' +
+    '<div class="chip-row" style="margin-bottom:20px;">' +
+      '<button class="chip on">Completed</button>' +
+      '<button class="chip">Pending</button>' +
+      '<button class="chip">Not done</button>' +
+    '</div>' +
+    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ Tenant details updated\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save tenant details</button>';
+}
+
+function openTenantChangeover(assetId) {
+  var t = getThingById(assetId);
+  var config = getAssetConfig(t);
+  var ri = config.rentalIncome;
+  if (!ri) return;
+  var step = formState.changeoverStep || 1;
+  document.getElementById('form-backdrop').classList.add('active');
+  document.getElementById('form-sheet').classList.add('active');
+  var body = document.getElementById('form-body');
+
+  if (step === 1) {
+    // Step 1: Close old tenant
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' +
+        '<div style="font-size:16px;font-weight:500;">Tenant changeover</div>' +
+        '<span style="font-size:9px;padding:3px 8px;background:rgba(0,0,0,0.06);border-radius:8px;color:#6b6660;">Step 1 of 3</span>' +
+      '</div>' +
+      '<div style="font-size:13px;font-weight:500;margin-bottom:4px;">Close out ' + ri.tenant + '</div>' +
+      '<div style="font-size:11px;color:#6b6660;margin-bottom:16px;">Record the departure and deposit settlement.</div>' +
+      '<div class="field-label">Move-out date</div>' +
+      '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Security deposit (₹1,26,000)</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        '<button class="chip on">Full refund</button>' +
+        '<button class="chip">Partial refund</button>' +
+        '<button class="chip">Forfeited</button>' +
+      '</div>' +
+      '<div class="field-label">Deductions (optional)</div>' +
+      '<input type="text" class="text-input" placeholder="e.g. ₹8,000 for wall damage" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Property condition</div>' +
+      '<div class="chip-row" style="margin-bottom:20px;">' +
+        '<button class="chip on">Good</button>' +
+        '<button class="chip">Minor damage</button>' +
+        '<button class="chip">Major damage</button>' +
+      '</div>' +
+      '<button class="form-save-btn" onclick="formState.changeoverStep = 2; openTenantChangeover(\'' + assetId + '\')">Next · Add new tenant →</button>';
+  } else if (step === 2) {
+    // Step 2: New tenant details
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' +
+        '<div style="font-size:16px;font-weight:500;">New tenant</div>' +
+        '<span style="font-size:9px;padding:3px 8px;background:rgba(0,0,0,0.06);border-radius:8px;color:#6b6660;">Step 2 of 3</span>' +
+      '</div>' +
+      '<div class="field-label">Tenant name</div>' +
+      '<input type="text" class="text-input" placeholder="e.g. Sharma family" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Phone</div>' +
+      '<input type="tel" class="text-input" placeholder="+91" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Monthly rent</div>' +
+      '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Move-in date</div>' +
+      '<input type="date" class="text-input" style="margin-bottom:14px;" />' +
+      '<div class="field-label">Security deposit collected</div>' +
+      '<input type="text" class="text-input" placeholder="₹0" style="margin-bottom:20px;" />' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="formState.changeoverStep = 1; openTenantChangeover(\'' + assetId + '\')" style="padding:14px 20px;border-radius:14px;background:rgba(0,0,0,0.04);font-size:12px;font-weight:500;">← Back</button>' +
+        '<button class="form-save-btn" style="flex:1;" onclick="formState.changeoverStep = 3; openTenantChangeover(\'' + assetId + '\')">Next · Agreement →</button>' +
+      '</div>';
+  } else if (step === 3) {
+    // Step 3: Agreement + verification
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' +
+        '<div style="font-size:16px;font-weight:500;">Agreement & verification</div>' +
+        '<span style="font-size:9px;padding:3px 8px;background:rgba(0,0,0,0.06);border-radius:8px;color:#6b6660;">Step 3 of 3</span>' +
+      '</div>' +
+      '<div class="field-label">Agreement type</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        '<button class="chip on">Registered</button>' +
+        '<button class="chip">Unregistered</button>' +
+      '</div>' +
+      '<div class="field-label">Agreement period</div>' +
+      '<div class="two-col" style="margin-bottom:14px;">' +
+        '<div><div class="field-label" style="margin-top:0;">From</div><input type="date" class="text-input" /></div>' +
+        '<div><div class="field-label" style="margin-top:0;">Until</div><input type="date" class="text-input" /></div>' +
+      '</div>' +
+      '<div class="field-label">Lock-in period</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        '<button class="chip">None</button>' +
+        '<button class="chip on">6 months</button>' +
+        '<button class="chip">11 months</button>' +
+        '<button class="chip">1 year</button>' +
+      '</div>' +
+      '<div class="field-label">Police verification</div>' +
+      '<div class="chip-row" style="margin-bottom:14px;">' +
+        '<button class="chip">Done</button>' +
+        '<button class="chip on">Pending</button>' +
+      '</div>' +
+      '<div style="padding:12px;background:rgba(200,135,13,0.08);border-radius:10px;margin-bottom:20px;">' +
+        '<div style="font-size:10px;color:#8a5d09;line-height:1.5;">Police verification is mandatory. KKOSH will remind you until it\'s completed.</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="formState.changeoverStep = 2; openTenantChangeover(\'' + assetId + '\')" style="padding:14px 20px;border-radius:14px;background:rgba(0,0,0,0.04);font-size:12px;font-weight:500;">← Back</button>' +
+        '<button class="form-save-btn" style="flex:1;" onclick="formState.changeoverStep = 1; closeFormSheet(\'form\'); showToast(\'✓ Tenant changeover complete · New tenant saved\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save & complete</button>' +
+      '</div>';
+  }
+}
+
+/* ============ CONTEXTUAL HELP ============ */
+function openHelpSheet() {
+  document.getElementById('help-backdrop').classList.add('active');
+  document.getElementById('help-sheet').classList.add('active');
+  var body = document.getElementById('help-body');
+  if (!body) return;
+
+  // Detect context
+  var screen = state.currentScreen || 'home';
+  var contextLabel = 'KKOSH';
+  var contextHints = [];
+
+  if (screen === 'home') {
+    contextLabel = 'Home';
+    contextHints = ['How do I add a new asset?', 'What do the alert badges mean?', 'How to change time of day?'];
+  } else if (screen === 'things') {
+    contextLabel = 'Things';
+    contextHints = ['How do I filter by category?', 'How to archive an asset?', 'Where are my documents?'];
+  } else if (screen === 'family') {
+    contextLabel = 'Family';
+    contextHints = ['How to add a family member?', 'How to assign things to someone?', 'Can family members log in?'];
+  } else if (screen === 'money') {
+    contextLabel = 'Money';
+    contextHints = ['How do I add a loan or SIP?', 'How does auto-pay work?', 'Where is my transaction history?'];
+  } else if (screen === 'asset') {
+    contextLabel = 'Asset card';
+    contextHints = ['How to add insurance?', 'How do I log a service?', 'How to move this to another property?'];
+  } else if (screen === 'member') {
+    contextLabel = 'Member profile';
+    contextHints = ['How to edit member details?', 'How to assign things?'];
+  } else if (screen === 'profile' || screen === 'settings') {
+    contextLabel = 'Settings';
+    contextHints = ['How to change my name?', 'How to connect DigiLocker?', 'Is my data safe?'];
+  }
+
+  var hintsHtml = contextHints.map(function(h) {
+    return '<button onclick="showToast(\'' + h + ' — answer coming soon\'); closeFormSheet(\'help\')" style="width:100%;padding:12px 14px;background:white;border-radius:10px;margin-bottom:6px;text-align:left;font-size:12px;color:#3a3834;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span>' + h + '</span><span style="color:#9a958f;font-size:10px;">→</span></button>';
+  }).join('');
+
+  var whatsappText = encodeURIComponent('Hi KKOSH, I need help. Screen: ' + contextLabel);
+
+  body.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<div style="font-size:18px;font-weight:500;">Need help?</div>' +
+      '<button class="sheet-close" onclick="closeFormSheet(\'help\')">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+    '</div>' +
+
+    '<div style="font-size:10px;color:#9a958f;letter-spacing:0.4px;font-weight:500;margin-bottom:6px;">YOU\'RE ON · ' + contextLabel.toUpperCase() + '</div>' +
+    hintsHtml +
+
+    '<div style="margin-top:16px;font-size:10px;color:#9a958f;letter-spacing:0.4px;font-weight:500;margin-bottom:8px;">TALK TO US</div>' +
+
+    '<button onclick="showToast(\'Opening WhatsApp...\'); closeFormSheet(\'help\')" style="width:100%;padding:14px;background:#25D366;border-radius:12px;color:white;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">' +
+      '<span style="font-size:16px;">💬</span> Chat on WhatsApp' +
+    '</button>' +
+
+    '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+      '<button onclick="showToast(\'Bug report started\'); closeFormSheet(\'help\')" style="flex:1;padding:12px;background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.06);text-align:center;">' +
+        '<div style="font-size:14px;margin-bottom:3px;">🐛</div><div style="font-size:11px;font-weight:500;">Report bug</div>' +
+      '</button>' +
+      '<button onclick="showToast(\'Feature request noted\'); closeFormSheet(\'help\')" style="flex:1;padding:12px;background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.06);text-align:center;">' +
+        '<div style="font-size:14px;margin-bottom:3px;">💡</div><div style="font-size:11px;font-weight:500;">Suggest feature</div>' +
+      '</button>' +
+    '</div>' +
+
+    '<div style="font-size:9px;color:#9a958f;text-align:center;margin-top:8px;line-height:1.5;">We reply within 4 hours · Mon–Sat 9am–7pm<br>support@kkosh.in</div>';
+}
+
+/* ============ NOTIFICATIONS ============ */
+function renderNotifications() {
+  var scr = document.getElementById('screen-notifications');
+  if (!scr) return;
+
+  var notifications = [
+    // Today
+    { id: 'n1', time: '2h ago', title: 'PUC expired', sub: 'Honda City · Expired 4 days ago', type: 'critical', assetId: 'honda-city', icon: 'car', group: 'today' },
+    { id: 'n2', time: '3h ago', title: 'Electricity bill due', sub: 'Woodstock · BSES · ₹4,280 · due in 3 days', type: 'attention', assetId: 'woodstock', icon: 'home', group: 'today' },
+    { id: 'n3', time: '5h ago', title: 'Rent due in 3 days', sub: 'Koramangala · ₹38,000 to Mrs. Mehra', type: 'attention', assetId: 'koramangala', icon: 'home', group: 'today' },
+    { id: 'n4', time: '6h ago', title: 'Driver salary due tomorrow', sub: 'Ramu · ₹15,000 · Woodstock', type: 'attention', assetId: 'woodstock', icon: 'home', group: 'today' },
+    // Yesterday
+    { id: 'n5', time: 'Yesterday', title: 'Property tax due in 22 days', sub: 'Woodstock · MCG · FY 2026-27', type: 'info', assetId: 'woodstock', icon: 'home', group: 'yesterday' },
+    { id: 'n6', time: 'Yesterday', title: '2 challans pending', sub: 'Honda City · ₹1,500 total', type: 'attention', assetId: 'honda-city', icon: 'car', group: 'yesterday' },
+    { id: 'n7', time: 'Yesterday', title: 'Voltas AC filter cleaning due', sub: 'Woodstock · Living Room · in 9 days', type: 'info', assetId: 'voltas-ac', icon: 'appliance', group: 'yesterday' },
+    // Earlier
+    { id: 'n8', time: '3 days ago', title: 'Cook salary paid', sub: 'Kamla · ₹12,000 · Woodstock', type: 'success', assetId: 'woodstock', icon: 'home', group: 'earlier' },
+    { id: 'n9', time: '3 days ago', title: 'Maid salary paid', sub: 'Sunita · ₹8,000 · Woodstock', type: 'success', assetId: 'woodstock', icon: 'home', group: 'earlier' },
+    { id: 'n10', time: '5 days ago', title: 'Society maintenance paid', sub: 'Woodstock · ₹5,700 · BBPS', type: 'success', assetId: 'woodstock', icon: 'home', group: 'earlier' },
+    { id: 'n11', time: '1 week ago', title: 'Insurance renewal in 6 months', sub: 'Honda City · HDFC ERGO · Oct 2026', type: 'info', assetId: 'honda-city', icon: 'car', group: 'earlier' },
+    { id: 'n12', time: '1 week ago', title: 'Rent received', sub: 'Suncity · ₹42,000 · Kumar family', type: 'success', assetId: 'suncity', icon: 'home', group: 'earlier' }
+  ];
+
+  var typeColors = { critical: '#A8432E', attention: '#8a5d09', info: '#6b6660', success: '#1f6638' };
+  var typeBg = { critical: 'rgba(168,67,46,0.08)', attention: 'rgba(200,135,13,0.08)', info: 'rgba(0,0,0,0.04)', success: 'rgba(45,138,78,0.08)' };
+  var typeIcon = { critical: '🔴', attention: '🟡', info: '🔵', success: '✅' };
+
+  function renderGroup(label, items) {
+    if (items.length === 0) return '';
+    var rows = items.map(function(n) {
+      return '<div class="card-row" style="padding:12px 14px;" onclick="goTo(\'asset\', { assetId: \'' + n.assetId + '\' })">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:' + typeBg[n.type] + ';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">' + typeIcon[n.type] + '</div>' +
+        '<div class="row-main" style="margin-left:12px;">' +
+          '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">' +
+            '<div style="font-size:13px;font-weight:500;">' + n.title + '</div>' +
+            '<div style="font-size:9px;color:#9a958f;flex-shrink:0;">' + n.time + '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#6b6660;margin-top:3px;">' + n.sub + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div style="padding:16px 4px 4px;font-size:11px;font-weight:500;letter-spacing:0.6px;color:#6b6660;">' + label + '</div>' +
+      '<div class="section-card" style="margin:0;">' + rows + '</div>';
+  }
+
+  var todayItems = notifications.filter(function(n) { return n.group === 'today'; });
+  var yesterdayItems = notifications.filter(function(n) { return n.group === 'yesterday'; });
+  var earlierItems = notifications.filter(function(n) { return n.group === 'earlier'; });
+
+  var criticalCount = notifications.filter(function(n) { return n.type === 'critical'; }).length;
+  var attentionCount = notifications.filter(function(n) { return n.type === 'attention'; }).length;
+
+  scr.innerHTML =
+    '<div class="status-bar"></div>' +
+    '<div style="padding:14px 20px 0;display:flex;align-items:center;gap:12px;">' +
+      '<button class="back-btn" onclick="goTo(\'home\')">' + iconSvg('back', 18, '#1a1a1a') + '</button>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:17px;font-weight:500;">Notifications</div>' +
+      '</div>' +
+      '<button onclick="showToast(\'All marked as read\')" style="font-size:11px;color:#6b6660;">Mark all read</button>' +
+    '</div>' +
+    '<div class="screen-scroll">' +
+      '<div style="padding:12px 20px 0;">' +
+        '<div style="display:flex;gap:8px;">' +
+          (criticalCount > 0 ? '<div style="padding:6px 12px;background:rgba(168,67,46,0.08);border-radius:16px;font-size:11px;font-weight:500;color:#A8432E;">' + criticalCount + ' critical</div>' : '') +
+          (attentionCount > 0 ? '<div style="padding:6px 12px;background:rgba(200,135,13,0.08);border-radius:16px;font-size:11px;font-weight:500;color:#8a5d09;">' + attentionCount + ' need attention</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="padding:0 16px;">' +
+        renderGroup('TODAY', todayItems) +
+        renderGroup('YESTERDAY', yesterdayItems) +
+        renderGroup('EARLIER', earlierItems) +
+      '</div>' +
+      '<div style="height:40px;"></div>' +
+    '</div>';
+}
+
 /* ============ UNIVERSAL SEARCH ============ */
 function renderSearch() {
   var scr = document.getElementById('screen-search');
@@ -3653,22 +4392,43 @@ function openAssetEditSheet(assetId) {
 function openAssetMoreSheet(assetId) {
   var t = getActiveThings().find(function(th) { return th.id === assetId; });
   if (!t) return;
-  formState = { type: 'moreOptions', assetId: assetId };
+  var config = getAssetConfig(t);
+  var isShared = t.shared || false;
+  formState = { type: 'moreOptions', assetId: assetId, changeoverStep: 1 };
   document.getElementById('form-backdrop').classList.add('active');
   document.getElementById('form-sheet').classList.add('active');
   var body = document.getElementById('form-body');
-  body.innerHTML =
-    '<div style="font-size:16px;font-weight:500;margin-bottom:18px;">' + t.name + '</div>' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openAssetEditSheet(\'' + assetId + '\')"><div class="row-icon-tile">' + iconSvg('edit', 16) + '</div><div class="row-main"><div class="row-title">Edit details</div><div class="row-sub">Name, category, assignees</div></div></div>' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddReminder({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('bell', 16) + '</div><div class="row-main"><div class="row-title">Add care reminder</div><div class="row-sub">Set up a recurring check</div></div></div>' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddComponent({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('plus', 16) + '</div><div class="row-main"><div class="row-title">Add component</div><div class="row-sub">Track a part or accessory</div></div></div>' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openLogService({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('doc', 16) + '</div><div class="row-main"><div class="row-title">Log service</div><div class="row-sub">Record maintenance or repair</div></div></div>' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openAddPartner({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('users', 16) + '</div><div class="row-main"><div class="row-title">Add partner</div><div class="row-sub">Mechanic, electrician, dealer</div></div></div>' +
-    '<div style="border-top:0.5px solid rgba(0,0,0,0.06);margin-top:8px;padding-top:8px;">' +
-    '<div class="card-row" onclick="closeFormSheet(\'form\');openArchiveSheet(\'' + assetId + '\')"><div class="row-icon-tile" style="background:rgba(181,52,31,0.08);">' + iconSvg('doc', 16, '#A8432E') + '</div><div class="row-main"><div class="row-title" style="color:#A8432E;">Archive this asset</div><div class="row-sub">Remove from active view</div></div></div>' +
-    '</div>';
-}
 
+  var tenantRow = config.rentalIncome ? (
+    '<div class="card-row" onclick="closeFormSheet(\'form\');openManageTenantSheet(\'' + assetId + '\')"><div class="row-icon-tile" style="background:rgba(200,135,13,0.08);">' + iconSvg('users', 16, '#8a5d09') + '</div><div class="row-main"><div class="row-title">Manage tenant</div><div class="row-sub">Edit details · Changeover · History</div></div></div>'
+  ) : '';
+
+  if (isShared) {
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">' + t.name + '</div>' +
+      '<div style="font-size:11px;color:#6b6660;margin-bottom:18px;">🔗 Shared · Owned by ' + (t.sharedOwner || 'landlord') + '</div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openAddReminder({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('bell', 16) + '</div><div class="row-main"><div class="row-title">Add care reminder</div><div class="row-sub">Set up a recurring check</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openLogService({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('doc', 16) + '</div><div class="row-main"><div class="row-title">Log service</div><div class="row-sub">Record maintenance or repair</div></div></div>' +
+      '<div style="border-top:0.5px solid rgba(0,0,0,0.06);margin-top:8px;padding-top:8px;">' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\'); openHelpSheet()"><div class="row-icon-tile" style="background:rgba(45,138,78,0.08);">' + iconSvg('chat', 16, '#1f6638') + '</div><div class="row-main"><div class="row-title">Help with ' + t.name + '</div><div class="row-sub">Chat with KKOSH support</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\'); showToast(\'Notifying ' + (t.sharedOwner || 'owner') + '...\')"><div class="row-icon-tile" style="background:rgba(200,135,13,0.08);">' + iconSvg('phone_call', 16, '#8a5d09') + '</div><div class="row-main"><div class="row-title">Notify ' + (t.sharedOwner || 'owner') + '</div><div class="row-sub">Report an issue with this appliance</div></div></div>' +
+      '</div>' +
+      '<div style="padding:10px 0 0;font-size:9px;color:#9a958f;text-align:center;">Owned by ' + (t.sharedOwner || 'landlord') + '. To edit details or protection, contact the owner.</div>';
+  } else {
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:18px;">' + t.name + '</div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openAssetEditSheet(\'' + assetId + '\')"><div class="row-icon-tile">' + iconSvg('edit', 16) + '</div><div class="row-main"><div class="row-title">Edit details</div><div class="row-sub">Name, category, assignees</div></div></div>' +
+      tenantRow +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openAddReminder({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('bell', 16) + '</div><div class="row-main"><div class="row-title">Add care reminder</div><div class="row-sub">Set up a recurring check</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openAddComponent({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('plus', 16) + '</div><div class="row-main"><div class="row-title">Add component</div><div class="row-sub">Track a part or accessory</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openLogService({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('doc', 16) + '</div><div class="row-main"><div class="row-title">Log service</div><div class="row-sub">Record maintenance or repair</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openAddPartner({assetId:\'' + assetId + '\'})"><div class="row-icon-tile">' + iconSvg('users', 16) + '</div><div class="row-main"><div class="row-title">Add partner</div><div class="row-sub">Mechanic, electrician, dealer</div></div></div>' +
+      '<div style="border-top:0.5px solid rgba(0,0,0,0.06);margin-top:8px;padding-top:8px;">' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\'); openHelpSheet()"><div class="row-icon-tile" style="background:rgba(45,138,78,0.08);">' + iconSvg('chat', 16, '#1f6638') + '</div><div class="row-main"><div class="row-title">Help with ' + t.name + '</div><div class="row-sub">Chat with KKOSH support</div></div></div>' +
+      '<div class="card-row" onclick="closeFormSheet(\'form\');openArchiveSheet(\'' + assetId + '\')"><div class="row-icon-tile" style="background:rgba(181,52,31,0.08);">' + iconSvg('doc', 16, '#A8432E') + '</div><div class="row-main"><div class="row-title" style="color:#A8432E;">Archive this asset</div><div class="row-sub">Remove from active view</div></div></div>' +
+      '</div>';
+  }
+}
 /* ============ MEMBER EDIT SHEET ============ */
 function openMemberEditSheet(memberId) {
   var m = getMemberById(memberId);
@@ -4834,7 +5594,7 @@ function getAssetConfig(t) {
     modeBadge: null, brandLogo: null,
     protection: [], protectionSync: null, docs: [], details: [], detailsLabel: 'DETAILS',
     service: [], serviceEmpty: false, reminders: [], partners: [], partnersEmpty: false, support: [],
-    utilities: null, utilitiesSync: null, rentPayments: null, rentalIncome: null,
+    utilities: null, utilitiesSync: null, rentPayments: null, rentalIncome: null, landlordShared: null,
     components: null, connected: null, topReminder: null,
     networkChips: null, networkCount: 8, alsoOwn: 2
   };
@@ -4845,24 +5605,24 @@ function getAssetConfig(t) {
       topReminder: { title: 'Tyre rotation', chip: 'in 91d' },
       protectionSync: { source: 'Parivahan', time: '2h ago' },
       protection: [
-        { label: 'PUC Certificate', detail: 'Expired 4 days ago', state: 'expired', innerCta: 'I just renewed', history: [
+        { label: 'PUC Certificate', detail: 'Expired 4 days ago', state: 'expired', source: 'parivahan', innerCta: 'Sync with Parivahan', history: [
           { label: 'PUC · Valid Apr 2025 – Apr 2026', sub: 'Pollution Control Centre, Sec 31', amount: 90, status: 'Paid' },
           { label: 'PUC · Valid Apr 2024 – Apr 2025', sub: 'Pollution Control Centre, Sec 31', amount: 90, status: 'Paid' }
         ]},
-        { label: 'Challans · Delhi Traffic Police', detail: '2 pending', state: 'due', inlinePay: '₹1,500', history: [
+        { label: 'Challans · Delhi Traffic Police', detail: '2 pending', state: 'due', source: 'parivahan', inlinePay: '₹1,500', history: [
           { label: 'Overspeeding · NH-48', sub: 'Challan #DL2026-04-12 · Jan 2025', amount: 2000, status: 'Paid' },
           { label: 'No parking · CP', sub: 'Challan #DL2025-08-09 · Aug 2024', amount: 1000, status: 'Paid' }
         ]},
-        { label: 'Insurance', detail: 'HDFC ERGO · Comprehensive · expires Oct 2026', state: 'active', history: [
+        { label: 'Insurance', detail: 'HDFC ERGO · Comprehensive · expires Oct 2026', state: 'active', source: 'parivahan', history: [
           { label: 'HDFC ERGO · Oct 2025 – Oct 2026', sub: 'Comprehensive · NCB 35%', amount: 18400, status: 'Paid' },
           { label: 'HDFC ERGO · Oct 2024 – Oct 2025', sub: 'Comprehensive · NCB 25%', amount: 21200, status: 'Paid' },
           { label: 'HDFC ERGO · Oct 2023 – Oct 2024', sub: 'Comprehensive · first year', amount: 28800, status: 'Paid' }
         ]},
-        { label: 'Fitness Certificate', detail: 'Valid until Mar 2028', state: 'active' },
-        { label: 'Road Tax', detail: 'Valid lifetime', state: 'active' },
+        { label: 'Fitness Certificate', detail: 'Valid until Mar 2028', state: 'active', source: 'parivahan' },
+        { label: 'Road Tax', detail: 'Valid lifetime', state: 'active', source: 'parivahan' },
         { label: 'Extended warranty', detail: 'Honda · expires Sep 2026', state: 'active' },
         { label: 'RSA', detail: 'Honda Roadside Assist · expires Oct 2026', state: 'active' },
-        { label: 'Hypothecation', detail: 'HDFC Bank · NOC pending', state: 'due', stateLabel: 'ACTIVE' }
+        { label: 'Hypothecation', detail: 'HDFC Bank · NOC pending', state: 'due', stateLabel: 'ACTIVE', source: 'parivahan' }
       ],
       components: [
         { label: 'Tyres', detail: 'MRF ZVTV · Installed Sep 2024', warranty: 'active', age: '7 months' },
@@ -5028,6 +5788,25 @@ function getAssetConfig(t) {
       modeBadge: `<span class="state-pill" style="background: rgba(45,138,78,0.12); color: #1f6638;">You rent</span>`,
       topReminder: { title: '💰 Rent ₹38,000', chip: 'pay in 3d' },
       rentPayments: { paid: 25, total: 25, nextDate: 'in 3 days', amount: 38000, lastPaid: '5 Apr 2026 · UPI', landlord: 'Mrs. Mehra' },
+      landlordShared: {
+        landlord: 'Mrs. Mehra',
+        utilities: [
+          { label: 'Electricity', provider: 'BESCOM', consumerNo: 'BESK-2024-78901' },
+          { label: 'Water', provider: 'BWSSB', consumerNo: 'BWS-5BLK-4421' },
+          { label: 'Piped gas', provider: 'Gail Gas', consumerNo: 'GG-BLR-00892' }
+        ],
+        docs: [
+          { label: 'Lease agreement', shared: true },
+          { label: 'Deposit receipt', shared: true },
+          { label: 'Police verification', shared: true }
+        ],
+        appliances: [
+          { label: 'Voltas Split AC', location: 'Living room', warranty: 'AMC active' },
+          { label: 'Samsung 55" QLED', location: 'Living room', warranty: 'Panel warranty 2027' },
+          { label: 'Samsung Fridge', location: 'Kitchen', warranty: 'Compressor warranty 2031' },
+          { label: 'Whirlpool Washing Machine', location: 'Utility area', warranty: 'Motor warranty 2029' }
+        ]
+      },
       utilitiesSync: { source: 'BBPS', time: '1h ago' },
       utilities: [
         { label: 'Electricity', detail: 'BESCOM · ₹2,800 last month', amount: 2800, state: 'due' },
@@ -5177,13 +5956,12 @@ function getAssetConfig(t) {
       topReminder: { title: 'First service', chip: 'in 14d' },
       protectionSync: { source: 'Parivahan', time: '2h ago' },
       protection: [
-        { label: 'Insurance', detail: 'ICICI Lombard · expires Aug 2026', state: 'active', history: [
+        { label: 'Insurance', detail: 'ICICI Lombard · expires Aug 2026', state: 'active', source: 'parivahan', history: [
           { label: 'ICICI Lombard · Aug 2025 – Aug 2026', sub: 'Comprehensive · NCB 20%', amount: 8400, status: 'Paid' },
           { label: 'ICICI Lombard · Aug 2024 – Aug 2025', sub: 'Comprehensive · first year', amount: 11200, status: 'Paid' }
         ]},
-        { label: 'PUC Certificate', detail: 'Valid until Nov 2026', state: 'active' },
-        { label: 'RC Book', detail: 'DigiLocker verified', state: 'active' },
-        { label: 'Road Tax', detail: 'Valid lifetime', state: 'active' },
+        { label: 'PUC Certificate', detail: 'Valid until Nov 2026', state: 'active', source: 'parivahan' },
+        { label: 'Road Tax', detail: 'Valid lifetime', state: 'active', source: 'parivahan' },
         { label: 'Extended warranty', detail: 'Royal Enfield · expires Aug 2027', state: 'active' },
         { label: 'RSA', detail: 'Royal Enfield RSA · expires Aug 2026', state: 'active' }
       ],
@@ -5508,6 +6286,40 @@ function getAssetConfig(t) {
       ],
       networkChips: ['Best trails?', 'Upgrade advice?', '+ Custom'],
       networkCount: 6, alsoOwn: 2
+    };
+  }
+
+  // Shared appliances — tenant's view (limited access)
+  if (t.shared) {
+    var sharedDetailMap = {
+      'shared-ac': { brand: 'voltas', details: [{ label: 'Model', value: 'Voltas 1.5T 5-Star Inverter' }, { label: 'Location', value: 'Koramangala · Living Room' }],
+        protection: [{ label: 'AMC', detail: 'Active · managed by owner', state: 'active' }, { label: 'Compressor warranty', detail: 'Active until 2029', state: 'active' }],
+        components: [{ label: 'Air filter', detail: 'Last cleaned Mar 2026', warranty: null, age: '1 month' }, { label: 'Remote', detail: 'Voltas OEM', warranty: null, age: '2 years' }],
+        service: [{ title: 'Filter cleaning', detail: '14 Mar 2026 · Logged by tenant', amount: 499 }],
+        reminders: [{ title: 'Filter cleaning', detail: 'Every 60 days', chip: 'in 9d' }],
+        support: [{ label: 'Voltas Customer Care', detail: '1800-266-4555', brandLogo: 'voltas' }] },
+      'shared-tv': { brand: 'samsung', details: [{ label: 'Model', value: 'Samsung QN55Q80C · 55" QLED' }, { label: 'Location', value: 'Koramangala · Living Room' }],
+        protection: [{ label: 'Panel warranty', detail: 'Active until Aug 2027', state: 'active' }], components: [], service: [], reminders: [], support: [{ label: 'Samsung Support', detail: '1800-5-7267864', brandLogo: 'samsung' }] },
+      'shared-fridge': { brand: 'samsung', details: [{ label: 'Model', value: 'Samsung RF28T5A01B1 · French Door' }, { label: 'Location', value: 'Koramangala · Kitchen' }],
+        protection: [{ label: 'Compressor warranty', detail: 'Active until Jul 2031', state: 'active' }], components: [{ label: 'Water filter', detail: 'Check with owner', warranty: null }], service: [], reminders: [{ title: 'Water filter check', detail: 'Every 6 months', chip: 'in 3mo' }], support: [{ label: 'Samsung Support', detail: '1800-5-7267864', brandLogo: 'samsung' }] },
+      'shared-wm': { brand: null, details: [{ label: 'Model', value: 'Whirlpool 7.5kg Top Load' }, { label: 'Location', value: 'Koramangala · Utility area' }],
+        protection: [{ label: 'Motor warranty', detail: 'Active until 2029', state: 'active' }], components: [], service: [], reminders: [], support: [{ label: 'Whirlpool Support', detail: '1800-208-1800' }] }
+    };
+    var sd = sharedDetailMap[t.id] || { details: [], protection: [], components: [], service: [], reminders: [], support: [] };
+    return { ...base,
+      brandLogo: sd.brand || null,
+      modeBadge: '<span class="state-pill" style="background: rgba(0,0,0,0.06); color: #6b6660;">🔗 Shared · ' + t.sharedOwner + '\'s</span>',
+      protection: sd.protection,
+      components: sd.components.length > 0 ? sd.components : null,
+      details: [...sd.details, { label: 'Owner', value: t.sharedOwner }],
+      detailsLabel: t.category === 'electronics' ? 'DEVICE DETAILS' : 'APPLIANCE DETAILS',
+      service: sd.service,
+      serviceEmpty: sd.service.length === 0,
+      reminders: sd.reminders,
+      partners: [],
+      partnersEmpty: true,
+      support: sd.support,
+      docs: []
     };
   }
 
