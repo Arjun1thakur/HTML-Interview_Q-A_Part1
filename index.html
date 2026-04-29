@@ -15,10 +15,10 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 input { font-family: inherit; }
 
 /* Layout */
-.app-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 0px; gap: 24px; }
+.app-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; gap: 24px; }
 .device-frame {
-  width: 390px; height: min(844px, calc(100vh)); max-height: 844px;
-  background: #F7F1E8; border-radius: 40px; border: 0px solid #1a1a1a;
+  width: 390px; height: min(844px, calc(100vh - 40px)); max-height: 844px;
+  background: #F7F1E8; border-radius: 40px; border: 10px solid #1a1a1a;
   overflow: hidden; position: relative; box-shadow: 0 10px 60px rgba(0,0,0,0.25);
 }
 
@@ -2084,6 +2084,7 @@ function renderAssetCard(assetId) {
   const t = getThingById(assetId);
   if (!t) { scr.innerHTML = '<div class="coming-soon">Asset not found</div>'; return; }
 
+
   const config = getAssetConfig(t);
   window._assetExpand = window._assetExpand || {};
   const expand = window._assetExpand[assetId] || {};
@@ -2483,9 +2484,9 @@ function renderAssetCard(assetId) {
     <div class="section-card">
       <div style="padding: 4px 0;">
         ${visible.map(d => `
-          <div style="padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; border-top: 0.5px solid rgba(0,0,0,0.06);">
-            <div style="font-size: 11px; color: #6b6660;">${d.label}</div>
-            <div style="font-size: 12px; font-weight: 500; text-align: right;">${d.value}</div>
+          <div style="padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; border-top: 0.5px solid rgba(0,0,0,0.06);${d.highlight ? ' background: rgba(168,67,46,0.04);' : ''}">
+            <div style="font-size: 11px; color: ${d.sub ? '#9a958f' : '#6b6660'};">${d.label}</div>
+            <div style="font-size: ${d.highlight ? '14px' : '12px'}; font-weight: ${d.highlight ? '600' : '500'}; text-align: right; color: ${d.highlight ? '#1a1a1a' : d.sub ? '#9a958f' : '#1a1a1a'};">${d.value}</div>
           </div>
         `).join('')}
       </div>
@@ -2508,7 +2509,7 @@ function renderAssetCard(assetId) {
                 <div style="font-size: 13px; font-weight: 500;">${s.title}</div>
                 ${s.amount ? `<div style="font-size: 12px; font-weight: 500;">₹${s.amount.toLocaleString('en-IN')}</div>` : `<div style="font-size: 10px; color: #9a958f;">${s.date || ''}</div>`}
               </div>
-              <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${s.detail}</div>
+              <div style="font-size: 11px; color: #6b6660; margin-top: 3px;">${s.detail}${s.odo ? ` · <span style="color: #9a958f;">⊙ ${s.odo}</span>` : ''}</div>
             </div>
           </div>
         `).join('')}
@@ -2657,26 +2658,32 @@ function renderAssetCard(assetId) {
           const linkedProperty = getActiveThings().find(p => p.category === 'property' && p.name.toLowerCase().includes(propertyName.toLowerCase().split(' ')[0]));
           const propertyClick = linkedProperty ? "goTo('asset', { assetId: '" + linkedProperty.id + "' })" : '';
           const isShared = t.shared || false;
+          const isVehicle = t.category === 'vehicles';
+          const locLabel = isShared ? 'Shared by ' + (t.sharedOwner || 'owner') : isVehicle ? 'Parked at' : 'Located at';
+          const btnLabel = isVehicle ? 'Change' : 'Move';
           return `
           <div style="margin: 8px 16px 4px; padding: 12px 14px; background: white; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
             <div style="width: 32px; height: 32px; border-radius: 10px; background: #F7F1E8; display: flex; align-items: center; justify-content: center;">
-              ${iconSvg('home', 14, '#1a1a1a')}
+              ${iconSvg(isVehicle ? 'car' : 'home', 14, '#1a1a1a')}
             </div>
             <div style="flex: 1; cursor: ${linkedProperty ? 'pointer' : 'default'};" ${linkedProperty ? 'onclick="' + propertyClick + '"' : ''}>
               <div style="font-size: 12px; font-weight: 500;">${propertyName}${room ? ' · ' + room : ''}</div>
-              <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">${isShared ? 'Shared by ' + (t.sharedOwner || 'owner') : 'Located at'}${linkedProperty ? ' · tap to view property →' : ''}</div>
+              <div style="font-size: 10px; color: #9a958f; margin-top: 1px;">${locLabel}${linkedProperty ? ' · tap to view property →' : ''}</div>
             </div>
-            ${!isShared ? '<button onclick="event.stopPropagation(); openEditConnected(\'' + t.id + '\', \'' + t.id + '\', \'' + room + '\')" style="font-size: 9px; color: #6b6660; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,0.04);">Move</button>' : ''}
+            ${!isShared ? '<button onclick="event.stopPropagation(); openEditConnected(\'' + t.id + '\', \'' + t.id + '\', \'' + room + '\')" style="font-size: 9px; color: #6b6660; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,0.04);">' + btnLabel + '</button>' : ''}
           </div>`;
         } else {
           // Zero state — no location set
+          const isVehicle = t.category === 'vehicles';
+          const zeroTitle = isVehicle ? 'Where is this parked?' : 'Where does this live?';
+          const zeroSub = isVehicle ? 'Link to a property for full household tracking' : 'Link to a property for full household tracking';
           return `
           <div style="margin: 8px 16px 4px; padding: 12px 14px; background: white; border-radius: 12px; border: 1px dashed rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="openEditConnected('${t.id}', '${t.id}', '')">
             <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center;">
-              ${iconSvg('home', 14, '#9a958f')}
+              ${iconSvg(isVehicle ? 'car' : 'home', 14, '#9a958f')}
             </div>
             <div style="flex: 1;">
-              <div style="font-size: 12px; font-weight: 500; color: #9a958f;">Where does this live?</div>
+              <div style="font-size: 12px; font-weight: 500; color: #9a958f;">${zeroTitle}</div>
               <div style="font-size: 10px; color: #c2bdb5; margin-top: 1px;">Link to a property for full household tracking</div>
             </div>
             <span style="font-size: 10px; color: #A8432E; font-weight: 500;">+ Add</span>
@@ -2699,6 +2706,7 @@ function renderAssetCard(assetId) {
       ` : ''}
       ${utilitiesHtml}
       ${protectionHtml}
+
       ${componentsHtml}
       ${docsHtml}
       ${connectedHtml}
@@ -2713,7 +2721,6 @@ function renderAssetCard(assetId) {
     </div>
   `;
 }
-
 function toggleAssetSection(assetId, section) {
   window._assetExpand = window._assetExpand || {};
   window._assetExpand[assetId] = window._assetExpand[assetId] || {};
@@ -3131,6 +3138,11 @@ function renderServiceForm(assetId) {
       </div>
     </div>
 
+    ${t && t.category === 'vehicles' ? `
+    <div class="field-label">Odometer reading (km)</div>
+    <input type="number" class="text-input" placeholder="e.g. 34200" value="${sel.odometer || ''}" oninput="formState.selections.odometer = this.value" style="margin-bottom: 16px;" />
+    ` : ''}
+
     ${doneBySection}
 
     <div class="field-label">Note (optional)</div>
@@ -3156,6 +3168,7 @@ function saveService() {
   closeFormSheet('service');
   const sel = formState.selections;
   const parts = [sel.task + ' logged'];
+  if (sel.odometer) parts.push('⊙ ' + Number(sel.odometer).toLocaleString('en-IN') + ' km');
   if (sel.addComponent && sel.compBrand) parts.push(sel.compBrand + ' added');
   if (sel.doneBy === 'partner' && sel.addingNewPartner && sel.newPartnerName) parts.push(sel.newPartnerName + ' saved');
   if (sel.setReminder) parts.push('reminder every ' + (sel.reminderInterval || '6 months'));
@@ -3481,21 +3494,53 @@ function openEditConnected(assetId, connectedId, currentLocation) {
   document.getElementById('form-backdrop').classList.add('active');
   document.getElementById('form-sheet').classList.add('active');
   var body = document.getElementById('form-body');
-  var connectedThing = getThingById(connectedId);
-  var name = connectedThing ? connectedThing.name : connectedId;
+  var thing = getThingById(connectedId);
+  var name = thing ? thing.name : connectedId;
+  var isVehicle = thing && thing.category === 'vehicles';
+  var properties = getActiveThings().filter(function(t) { return t.category === 'property'; });
 
-  body.innerHTML =
-    '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Edit location</div>' +
-    '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">' + name + '</div>' +
-    '<div class="field-label">Current room / location</div>' +
-    '<div class="chip-row" style="margin-bottom:16px;">' +
-      ['Living room', 'Bedroom', 'Kitchen', 'Study', 'Bathroom', 'Balcony', 'Guest room'].map(function(r) {
-        return '<button class="chip' + (currentLocation === r ? ' on' : '') + '">' + r + '</button>';
-      }).join('') +
-    '</div>' +
-    '<div class="field-label">Or type a location</div>' +
-    '<input type="text" class="text-input" placeholder="e.g. Master bedroom" value="' + (currentLocation || '') + '" style="margin-bottom:20px;" />' +
-    '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + name + ' moved\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save location</button>';
+  // Parse current location
+  var currentProperty = currentLocation ? currentLocation.split('·')[0].trim() : '';
+  if (thing && thing.location) {
+    currentProperty = thing.location.split('·')[0].trim();
+  }
+  var currentRoom = thing && thing.location ? (thing.location.split('·')[1] || '').trim() : (currentLocation || '');
+
+  // Property chips
+  var propertyChips = properties.map(function(p) {
+    var sel = p.name.toLowerCase().includes(currentProperty.toLowerCase().split(' ')[0]);
+    return '<button class="chip' + (sel ? ' on' : '') + '">' + p.name + '</button>';
+  }).join('');
+
+  if (isVehicle) {
+    // Vehicles — property picker only, no room
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Where is ' + name + ' parked?</div>' +
+      '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">Select the property where this vehicle is usually parked.</div>' +
+      '<div class="field-label">Property</div>' +
+      '<div class="chip-row" style="margin-bottom:16px;">' + propertyChips + '</div>' +
+      (properties.length === 0 ? '<div style="padding:12px;background:rgba(168,67,46,0.06);border-radius:10px;margin-bottom:16px;font-size:11px;color:#A8432E;">No properties added yet. <span style="font-weight:500;text-decoration:underline;cursor:pointer;" onclick="closeFormSheet(\'form\'); openAddSheet()">Add a property first →</span></div>' : '') +
+      '<div class="field-label">Or type a location</div>' +
+      '<input type="text" class="text-input" placeholder="e.g. Office parking, Street" value="" style="margin-bottom:20px;" />' +
+      '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + name + ' location updated\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save location</button>';
+  } else {
+    // Electronics / Appliances / Other — property + room picker
+    var roomChips = ['Living room', 'Bedroom', 'Kitchen', 'Study', 'Bathroom', 'Balcony', 'Guest room'].map(function(r) {
+      return '<button class="chip' + (currentRoom === r ? ' on' : '') + '">' + r + '</button>';
+    }).join('');
+
+    body.innerHTML =
+      '<div style="font-size:16px;font-weight:500;margin-bottom:4px;">Where does ' + name + ' live?</div>' +
+      '<div style="font-size:12px;color:#6b6660;margin-bottom:18px;">Link to a property and room for full tracking.</div>' +
+      '<div class="field-label">Property</div>' +
+      '<div class="chip-row" style="margin-bottom:16px;">' + propertyChips + '</div>' +
+      (properties.length === 0 ? '<div style="padding:12px;background:rgba(168,67,46,0.06);border-radius:10px;margin-bottom:16px;font-size:11px;color:#A8432E;">No properties added yet. <span style="font-weight:500;text-decoration:underline;cursor:pointer;" onclick="closeFormSheet(\'form\'); openAddSheet()">Add a property first →</span></div>' : '') +
+      '<div class="field-label">Room</div>' +
+      '<div class="chip-row" style="margin-bottom:16px;">' + roomChips + '</div>' +
+      '<div class="field-label">Or type a location</div>' +
+      '<input type="text" class="text-input" placeholder="e.g. Master bedroom" value="" style="margin-bottom:20px;" />' +
+      '<button class="form-save-btn" onclick="closeFormSheet(\'form\'); showToast(\'✓ ' + name + ' moved\'); goTo(\'asset\', {assetId:\'' + assetId + '\'})">Save location</button>';
+  }
 }
 
 /* ============ EDIT COMPONENT ============ */
@@ -5634,6 +5679,8 @@ function getAssetConfig(t) {
         { label: 'PUC', uploaded: false }, { label: 'Fitness', uploaded: true }
       ],
       details: [
+        { label: 'Odometer', value: '34,200 km', highlight: true },
+        { label: 'Avg monthly', value: '~1,200 km/mo', sub: true },
         { label: 'Make & model', value: 'Honda City ZX' },
         { label: 'Registered to', value: 'Dad · Sole owner' },
         { label: 'Fuel', value: 'Petrol' },
@@ -5642,9 +5689,9 @@ function getAssetConfig(t) {
       ],
       detailsLabel: 'VEHICLE DETAILS',
       service: [
-        { title: '10,000 km service', detail: '14 Jan 2025 · Honda Cars Gurugram', amount: 6800, brandLogo: 'honda' },
-        { title: 'Tyre replacement', detail: '22 Sep 2024 · Apollo Tyres', amount: 24000, brandLogo: 'apollo' },
-        { title: 'Battery replacement', detail: '12 Jan 2024 · Exide', amount: 8500, brandLogo: 'exide' }
+        { title: '10,000 km service', detail: '14 Jan 2025 · Honda Cars Gurugram', amount: 6800, brandLogo: 'honda', odo: '28,400 km' },
+        { title: 'Tyre replacement', detail: '22 Sep 2024 · Apollo Tyres', amount: 24000, brandLogo: 'apollo', odo: '24,100 km' },
+        { title: 'Battery replacement', detail: '12 Jan 2024 · Exide', amount: 8500, brandLogo: 'exide', odo: '16,800 km' }
       ],
       reminders: [
         { title: 'Tyre rotation', detail: 'Last done 22 Sep 2024', chip: 'in 91d' },
@@ -5974,6 +6021,8 @@ function getAssetConfig(t) {
         { label: 'PUC', uploaded: true }, { label: 'Invoice', uploaded: true }
       ],
       details: [
+        { label: 'Odometer', value: '8,400 km', highlight: true },
+        { label: 'Avg monthly', value: '~350 km/mo', sub: true },
         { label: 'Make & model', value: 'Royal Enfield Classic 350' },
         { label: 'Colour', value: 'Chrome Black' },
         { label: 'Registered to', value: 'Rajinder Sharma' },
@@ -5982,8 +6031,8 @@ function getAssetConfig(t) {
       ],
       detailsLabel: 'VEHICLE DETAILS',
       service: [
-        { title: '5000 km service', detail: '14 Jan 2026 · Royal Enfield Sec 14', amount: 1800 },
-        { title: 'Chain lubrication', detail: '28 Sep 2025 · Royal Enfield Sec 14', amount: 400 }
+        { title: '5000 km service', detail: '14 Jan 2026 · Royal Enfield Sec 14', amount: 1800, odo: '5,200 km' },
+        { title: 'Chain lubrication', detail: '28 Sep 2025 · Royal Enfield Sec 14', amount: 400, odo: '3,800 km' }
       ],
       reminders: [
         { title: 'First service', detail: '10,000 km · pre-booked slot', chip: 'in 14d' },
@@ -6414,6 +6463,7 @@ function renderMemberProfile(memberId) {
     </div>
   `;
 
+
   scr.innerHTML = `
     <div class="status-bar"></div>
     <div style="padding: 14px 20px 0; display: flex; align-items: center; justify-content: space-between;">
@@ -6434,7 +6484,6 @@ function renderMemberProfile(memberId) {
     </div>
   `;
 }
-
 /* ============ ONBOARDING FLOW — 10 screens ============ */
 
 // Shared state for onboarding
@@ -6481,16 +6530,35 @@ function obHeader(options) {
 function renderOnboardingIntro() {
   const scr = document.getElementById('screen-onboarding-intro');
   if (!scr) return;
-  scr.innerHTML = `<div class="status-bar"></div><div class="screen-scroll">
-    <div style="padding: 80px 28px 0;">
-      <div style="font-size: 42px; font-weight: 500; letter-spacing: -1.2px;">KKOSH</div>
-      <div style="font-size: 13px; color: #A8432E; margin-top: 8px; letter-spacing: 0.3px;">Ownership. Organised.</div>
-      <div style="margin-top: 56px; font-size: 24px; font-weight: 500; line-height: 1.35; letter-spacing: -0.3px;">Your home runs on things.<br>They have dates, dues,<br>and documents.</div>
-      <div style="margin-top: 16px; font-size: 14px; color: #6b6660; line-height: 1.6;">We keep them in one quiet place.<br>Starting with your car — in 10 seconds.</div>
+  scr.innerHTML = `<div class="status-bar"></div><div class="screen-scroll" style="display: flex; flex-direction: column; min-height: calc(100% - 44px); background: #F7F1E8;">
+    <div style="flex: 1; padding: 56px 28px 0;">
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 64px;">
+        <div style="width: 40px; height: 40px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 16px; font-weight: 700; color: white; letter-spacing: -0.5px;">K</span>
+        </div>
+        <div>
+          <div style="font-size: 20px; font-weight: 600; letter-spacing: -0.5px;">KKOSH</div>
+          <div style="font-size: 10px; color: #A8432E; letter-spacing: 0.5px; margin-top: -1px;">Ownership, organized.</div>
+        </div>
+      </div>
+
+      <div style="font-size: 32px; font-weight: 600; line-height: 1.2; letter-spacing: -0.8px; color: #1a1a1a;">One app for<br>everything your<br>household owns.</div>
+
+      <div style="width: 32px; height: 3px; background: #A8432E; border-radius: 2px; margin: 28px 0;"></div>
+
+      <div style="font-size: 15px; color: #3a3834; line-height: 1.5; letter-spacing: 0.2px;">Property · Vehicles · Appliances · Electronics</div>
+
+      <div style="margin-top: 24px; font-size: 13px; color: #9a958f; line-height: 2;">
+        Track warranty, insurance, service, challans.<br>
+        Pay utilities. Set reminders.<br>
+        Everyone in the loop. Nothing missed.
+      </div>
     </div>
-    <div style="padding: 48px 24px 0;">
-      <button class="primary-cta" onclick="goTo('ob-phone')">Show me →</button>
-      <div style="text-align: center; font-size: 11px; color: #9a958f; margin-top: 16px;">30 seconds to set up</div>
+
+    <div style="padding: 0 24px 44px;">
+      <button onclick="goTo('ob-phone')" style="width: 100%; padding: 16px; border-radius: 16px; background: #1a1a1a; color: white; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">Let's go <span style="font-size: 18px; margin-top: -1px;">→</span></button>
+      <div style="text-align: center; font-size: 10px; color: #c2bdb5; margin-top: 14px; letter-spacing: 0.3px;">30 seconds to set up</div>
     </div></div>`;
 }
 
@@ -6606,6 +6674,15 @@ function renderObValidate() {
         <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-top: 0.5px solid rgba(0,0,0,0.06);"><span style="color: #6b6660;">Registered</span><span style="font-weight: 500;">2021</span></div>
         <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-top: 0.5px solid rgba(0,0,0,0.06);"><span style="color: #6b6660;">RC number</span><span style="font-weight: 500;">DL 3C AB 1234</span></div>
       </div>
+    </div>
+
+    <div style="margin: 12px 20px 0; background: white; border-radius: 12px; padding: 14px;">
+      <div style="font-size: 11px; color: #6b6660; font-weight: 500; margin-bottom: 8px;">CURRENT ODOMETER <span style="font-weight: 400; color: #9a958f;">(optional)</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="number" class="text-input" placeholder="e.g. 34200" style="flex: 1; font-size: 16px; font-weight: 500; letter-spacing: 0.5px; padding: 12px;" />
+        <span style="font-size: 13px; color: #6b6660; font-weight: 500;">km</span>
+      </div>
+      <div style="font-size: 9px; color: #9a958f; margin-top: 6px;">Check your dashboard. Helps predict service, tyre life & resale value.</div>
     </div>
 
     <div style="margin: 12px 20px 0; background: rgba(200,135,13,0.08); border-radius: 12px; padding: 14px;">
