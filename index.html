@@ -14,6 +14,7 @@ html, body {
 button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
 input { font-family: inherit; }
 
+/* Layout */
 .app-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; gap: 24px; }
 .device-frame {
   width: 390px; height: min(844px, calc(100vh - 40px)); max-height: 844px;
@@ -21,6 +22,7 @@ input { font-family: inherit; }
   overflow: hidden; position: relative; box-shadow: 0 10px 60px rgba(0,0,0,0.25);
 }
 
+/* Capture mode — add ?capture to URL */
 .capture .app-wrapper { height: auto; min-height: 100vh; align-items: flex-start; padding: 20px; }
 .capture .device-frame {
   height: auto !important; max-height: none !important; overflow: visible !important;
@@ -3146,6 +3148,30 @@ function renderServiceForm(assetId) {
     <div class="field-label">Note (optional)</div>
     <input type="text" class="text-input" placeholder="e.g. Used Mobil 1 synthetic" value="${sel.note || ''}" oninput="formState.selections.note = this.value" style="margin-bottom: 4px;" />
 
+    <div style="margin-top: 16px; padding: 14px; background: white; border-radius: 12px; border: ${sel.invoiceAdded ? '1px solid rgba(45,138,78,0.3)' : '1px dashed rgba(0,0,0,0.08)'};">
+      ${sel.invoiceAdded ? `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 44px; background: rgba(45,138,78,0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px;">📄</div>
+          <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 500; color: #1f6638;">Invoice attached</div>
+            <div style="font-size: 10px; color: #6b6660; margin-top: 2px;">service_invoice.pdf · tap to change</div>
+          </div>
+          <button onclick="formState.selections.invoiceAdded = false; renderServiceForm('${assetId}')" style="font-size: 10px; color: #6b6660; padding: 4px 8px;">✕</button>
+        </div>
+      ` : `
+        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="formState.selections.invoiceAdded = true; renderServiceForm('${assetId}')">
+          <div style="width: 36px; height: 44px; background: rgba(0,0,0,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a958f" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 500; color: #6b6660;">Attach service invoice</div>
+            <div style="font-size: 10px; color: #9a958f; margin-top: 2px;">Photo, PDF, or scan from gallery</div>
+          </div>
+          <div style="font-size: 10px; color: #A8432E; font-weight: 500;">+ Add</div>
+        </div>
+      `}
+    </div>
+
     ${componentSection}
     ${reminderSection}
 
@@ -3167,6 +3193,7 @@ function saveService() {
   const sel = formState.selections;
   const parts = [sel.task + ' logged'];
   if (sel.odometer) parts.push('⊙ ' + Number(sel.odometer).toLocaleString('en-IN') + ' km');
+  if (sel.invoiceAdded) parts.push('invoice saved');
   if (sel.addComponent && sel.compBrand) parts.push(sel.compBrand + ' added');
   if (sel.doneBy === 'partner' && sel.addingNewPartner && sel.newPartnerName) parts.push(sel.newPartnerName + ' saved');
   if (sel.setReminder) parts.push('reminder every ' + (sel.reminderInterval || '6 months'));
